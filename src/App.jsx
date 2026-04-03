@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 const SUPABASE_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
