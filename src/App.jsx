@@ -116,7 +116,7 @@ function LoginPage({ onLogin }) {
       <div style={{ width: 380, padding: "40px", background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 16 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 9, letterSpacing: "0.25em", color: "#444", textTransform: "uppercase", marginBottom: 6 }}>Gestion</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#C9A96E", marginBottom: 8 }}>Patrimoine</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: "#C9A96E", marginBottom: 8 }}>Robinvest</div>
           <div style={{ fontSize: 12, color: "#555" }}>Connecte-toi pour accéder à ton espace</div>
         </div>
 
@@ -667,7 +667,7 @@ function ClientApp({ db, client, onLogout }) {
 
   if (!client) return (
     <div style={{ minHeight: "100vh", background: "#0C0C0E", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif", color: "#555", flexDirection: "column", gap: 16 }}>
-      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, color: "#C9A96E" }}>Patrimoine</div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 22, color: "#C9A96E" }}>Robinvest</div>
       <div style={{ fontSize: 13 }}>Aucun profil trouvé. Contacte ton conseiller.</div>
       <button onClick={onLogout} style={{ padding: "8px 20px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Déconnexion</button>
     </div>
@@ -692,7 +692,7 @@ function ClientApp({ db, client, onLogout }) {
       {/* Header */}
       <div style={{ padding: "18px 32px", borderBottom: "1px solid #1A1A1E", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0F0F11" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#C9A96E", marginRight: 8 }}>Patrimoine</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#C9A96E", marginRight: 8 }}>Robinvest</div>
           <div style={{ width: 1, height: 20, background: "#222" }} />
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: `${color}18`, border: `1.5px solid ${color}50`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color }}>{initials(client.nom)}</div>
           <div>
