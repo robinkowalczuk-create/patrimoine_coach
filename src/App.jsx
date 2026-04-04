@@ -322,7 +322,7 @@ function AdminApp({ db, session, onLogout }) {
       <div style={{ width: 240, background: "#0F0F11", borderRight: "1px solid #1A1A1E", display: "flex", flexDirection: "column", flexShrink: 0 }}>
         <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid #1A1A1E" }}>
           <div style={{ fontSize: 9, letterSpacing: "0.25em", color: "#444", textTransform: "uppercase", marginBottom: 3 }}>Admin</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: "#C9A96E" }}>Patrimoine</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: "#C9A96E" }}>Robinvest</div>
         </div>
         <div style={{ padding: "10px 10px 0" }}>
           <div onClick={() => setPage("global")} className="cr"
