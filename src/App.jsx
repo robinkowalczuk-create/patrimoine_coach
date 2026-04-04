@@ -92,6 +92,36 @@ const CSS = `
   .cr:hover{background:#181818!important}.tb:hover{color:#E2DDD6!important}.btn:hover{opacity:0.8}.row:hover{background:#1A1A1E!important}
   input,select,textarea{font-family:inherit}input:focus,select:focus,textarea:focus{outline:none;border-color:#444!important}
   .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:500}
+  .app-layout{display:flex;min-height:100vh}
+  .sidebar{width:240px;flex-shrink:0;transition:transform 0.3s ease}
+  .main-content{flex:1;overflow-y:auto;min-width:0;display:flex;flex-direction:column}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .grid-split{display:grid;grid-template-columns:1fr 2fr;gap:16px}
+  .grid-budget{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .tabs-row{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs-row::-webkit-scrollbar{display:none}
+  .page-pad{padding:24px 32px}
+  .header-pad{padding:18px 32px}
+  .mob-btn{display:none;background:none;border:none;cursor:pointer;color:#C9A96E;font-size:22px;padding:4px 8px;font-family:inherit}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
+  @media(max-width:768px){
+    .app-layout{flex-direction:column}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:260px}
+    .sidebar.open{transform:translateX(0)!important}
+    .overlay.open{display:block}
+    .mob-btn{display:block}
+    .main-content{width:100%}
+    .grid-3{grid-template-columns:1fr}
+    .grid-2{grid-template-columns:1fr}
+    .grid-split{grid-template-columns:1fr}
+    .grid-budget{grid-template-columns:1fr}
+    .page-pad{padding:14px 16px}
+    .header-pad{padding:12px 16px}
+    .hide-mob{display:none!important}
+    .show-mob{display:block!important}
+    .modal-box{width:92vw!important;max-width:420px!important}
+  }
 `;
 
 // ══════════════════════════════════════
@@ -263,7 +293,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+      <div className="grid-budget">
         <div>
           <BudgetGroup categorie="revenu" items={revenus} />
           <BudgetGroup categorie="depense_fixe" items={fixes} />
@@ -459,6 +489,7 @@ function AdminApp({ db, onLogout }) {
     </div>
   );
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const Logo = () => (
     <div style={{padding:"24px 20px 16px",borderBottom:"1px solid #1A1A1E"}}>
       <div style={{fontSize:9,letterSpacing:"0.25em",color:"#444",textTransform:"uppercase",marginBottom:3}}>Espace admin</div>
@@ -467,14 +498,15 @@ function AdminApp({ db, onLogout }) {
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"#0C0C0E",fontFamily:"'DM Sans',sans-serif",color:"#E2DDD6",display:"flex"}}>
+    <div className="app-layout" style={{background:"#0C0C0E",fontFamily:"'DM Sans',sans-serif",color:"#E2DDD6"}}>
       <style>{CSS}</style>
+      <div className={"overlay"+(sidebarOpen?" open":"")} onClick={()=>setSidebarOpen(false)}/>
 
       {/* SIDEBAR */}
-      <div style={{width:240,background:"#0F0F11",borderRight:"1px solid #1A1A1E",display:"flex",flexDirection:"column",flexShrink:0}}>
+      <div className={"sidebar"+(sidebarOpen?" open":"")} style={{background:"#0F0F11",borderRight:"1px solid #1A1A1E",display:"flex",flexDirection:"column"}}>
         <Logo />
         <div style={{padding:"10px 10px 0"}}>
-          <div onClick={()=>setPage("global")} className="cr"
+          <div onClick={()=>{setPage("global");setSidebarOpen(false);}} className="cr"
             style={{padding:"9px 12px",borderRadius:8,cursor:"pointer",fontSize:12,color:page==="global"?"#C9A96E":"#555",background:page==="global"?"#1A1712":"transparent",marginBottom:2}}>
             ⬡ Vue globale
           </div>
@@ -486,7 +518,7 @@ function AdminApp({ db, onLogout }) {
             const active=page==="client"&&activeClient?.id===c.id;
             const col=clientColor(idx);
             return (
-              <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");}}
+              <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");setSidebarOpen(false);}}
                 style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?"#1A1712":"transparent",border:active?`1px solid ${col}25`:"1px solid transparent"}}>
                 <div style={{display:"flex",alignItems:"center",gap:9}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
@@ -512,13 +544,16 @@ function AdminApp({ db, onLogout }) {
       </div>
 
       {/* MAIN */}
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column"}}>
+      <div className="main-content">
 
         {page==="global"&&(
           <div style={{padding:"32px 36px"}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,marginBottom:6}}>Vue d'ensemble</div>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+              <button className="mob-btn" onClick={()=>setSidebarOpen(true)}>☰</button>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28}}>Vue d'ensemble</div>
+            </div>
             <div style={{fontSize:12,color:"#555",marginBottom:28}}>{clients.length} clients accompagnés</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
+            <div className="grid-2">
               {clients.map((c,idx)=>{
                 const col=clientColor(idx);
                 const st=statutStyle[c.statut]||statutStyle["En bonne voie"];
@@ -548,8 +583,9 @@ function AdminApp({ db, onLogout }) {
           const st=statutStyle[activeClient.statut]||statutStyle["En bonne voie"];
           return (
             <>
-              <div style={{padding:"18px 32px",borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:"#0C0C0E",zIndex:10}}>
+              <div className="header-pad" style={{borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:"#0C0C0E",zIndex:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <button className="mob-btn" onClick={()=>setSidebarOpen(true)} style={{marginRight:4}}>☰</button>
                   <div style={{width:38,height:38,borderRadius:"50%",background:`${color}18`,border:`2px solid ${color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color}}>{initials(activeClient.nom)}</div>
                   <div>
                     <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20}}>{activeClient.nom}</div>
@@ -563,7 +599,7 @@ function AdminApp({ db, onLogout }) {
                 </div>
               </div>
 
-              <div style={{padding:"0 32px",borderBottom:"1px solid #1A1A1E",display:"flex"}}>
+              <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
                 {[["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["budget","Budget"],["notes","Notes"]].map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
                     style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
@@ -572,11 +608,11 @@ function AdminApp({ db, onLogout }) {
                 ))}
               </div>
 
-              <div style={{padding:"24px 32px",flex:1}}>
+              <div className="page-pad" style={{flex:1}}>
 
                 {tab==="synthese"&&(
                   <div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}}>
+                    <div className="grid-3" style={{marginBottom:20}}>
                       {[
                         {label:"Patrimoine total",val:fmt(patrimoineActuel)},
                         {label:"Patrimoine cible",val:fmt(activeClient.patrimoine_cible)},
@@ -588,7 +624,7 @@ function AdminApp({ db, onLogout }) {
                         </div>
                       ))}
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:16,marginBottom:16}}>
+                    <div className="grid-split" style={{marginBottom:16}}>
                       <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                         <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                         {parCategorie.length>0?<>
@@ -735,7 +771,7 @@ function AdminApp({ db, onLogout }) {
       {/* MODALS */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
-          <div style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
+          <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {(modal.type==="client_new"||modal.type==="client_edit")&&<>{inp("nom","Nom complet *","text","Sophie Martin")}{inp("age","Âge","number","32")}{inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}{inp("mensualite","Mensualité (€)","number","800")}{inp("date_debut","Suivi depuis","text","Jan 2024")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Statut</div><select value={form.statut||"En bonne voie"} onChange={e=>f("statut",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{STATUTS.map(s=><option key={s}>{s}</option>)}</select></div></>}
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
@@ -880,7 +916,7 @@ function ClientApp({ db, userId, onLogout }) {
       <style>{CSS}</style>
 
       {/* Header */}
-      <div style={{padding:"16px 32px",borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#0F0F11"}}>
+      <div className="header-pad" style={{borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#0F0F11"}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>ROBINVEST</div>
           <div style={{width:1,height:20,background:"#222"}}/>
@@ -894,12 +930,13 @@ function ClientApp({ db, userId, onLogout }) {
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div className="tag" style={{background:st.bg,color:st.text}}><div style={{width:4,height:4,borderRadius:"50%",background:st.dot,marginRight:5}}/>{client.statut}</div>
-          <button onClick={onLogout} style={{padding:"6px 14px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit"}}>Déconnexion</button>
+          <button onClick={onLogout} style={{padding:"6px 14px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit"}} className="hide-mob">Déconnexion</button>
+          <button onClick={onLogout} style={{padding:"6px 10px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit",display:"none"}} className="show-mob">↩</button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{padding:"0 32px",borderBottom:"1px solid #1A1A1E",display:"flex",background:"#0F0F11"}}>
+      <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
         {[["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["budget","Mon budget"]].map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
             style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
@@ -908,11 +945,11 @@ function ClientApp({ db, userId, onLogout }) {
         ))}
       </div>
 
-      <div style={{padding:"24px 32px",maxWidth:960,margin:"0 auto"}}>
+      <div className="page-pad" style={{maxWidth:960,margin:"0 auto"}}>
 
         {tab==="synthese"&&(
           <div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,marginBottom:20}}>
+            <div className="grid-2" style={{marginBottom:20}}>
               {[{label:"Patrimoine total",val:fmt(patrimoineTotal)},{label:"Patrimoine cible",val:fmt(client.patrimoine_cible)}].map((k,i)=>(
                 <div key={i} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:"18px 20px"}}>
                   <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:6}}>{k.label}</div>
@@ -920,7 +957,7 @@ function ClientApp({ db, userId, onLogout }) {
                 </div>
               ))}
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:16}}>
+            <div className="grid-split">
               <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                 <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                 {parCategorie.length>0?<>
@@ -1034,7 +1071,7 @@ function ClientApp({ db, userId, onLogout }) {
       {/* MODALS CLIENT */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
-          <div style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
+          <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
