@@ -6,7 +6,7 @@ import {
 
 const SB_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYWdvenNiamp3em5yYnV5dHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjcxNzUsImV4cCI6MjA5MDcwMzE3NX0.WWQeWjDEq6r3HgSYRAtE8eXk34YQYXc5UZ07cvR_b1I";
-const ADMIN_EMAIL = "robin.kowalczuk@gmail.com"; // ← Change par ton email
+const ADMIN_EMAIL = "robin.kowalczuk@gmail.com";
 
 const authHeaders = (token) => ({
   "Content-Type": "application/json",
@@ -1006,7 +1006,7 @@ function ClientApp({ db, userId, onLogout }) {
                         </div>
                       </div>
                     )}
-                    <div style={{padding:"10px 20px",borderTop:"1px solid #1A1A1E",display:"flex",gap:8"}}>
+                    <div style={{padding:"10px 20px",borderTop:"1px solid #1A1A1E",display:"flex",gap:8}}>
                       <button className="btn" onClick={()=>openModal("jalon_new",{objectif_id:obj.id})} style={{padding:"5px 12px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:6,cursor:"pointer",color:ocol,fontSize:10}}>+ Jalon</button>
                     </div>
                   </div>
