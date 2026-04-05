@@ -7,6 +7,7 @@ import {
 const SB_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYWdvenNiamp3em5yYnV5dHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjcxNzUsImV4cCI6MjA5MDcwMzE3NX0.WWQeWjDEq6r3HgSYRAtE8eXk34YQYXc5UZ07cvR_b1I";
 const ADMIN_EMAIL = "robin.kowalczuk@gmail.com";
+const FINNHUB_KEY = "d79a0r9r01qqpmhg0acgd79a0r9r01qqpmhg0ad0";
 
 const authHeaders = (token) => ({
   "Content-Type": "application/json",
@@ -120,6 +121,7 @@ const CSS = `
     .header-pad{padding:12px 16px}
     .hide-mob{display:none!important}
     .show-mob{display:block!important}
+    .show-mob-flex{display:flex!important}
     .modal-box{width:92vw!important;max-width:420px!important}
   }
 `;
@@ -147,7 +149,7 @@ function LoginPage({ onLogin }) {
       <div style={{ width: 380, padding: 40, background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 16 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ fontSize: 9, letterSpacing: "0.25em", color: "#444", textTransform: "uppercase", marginBottom: 6 }}>Bienvenue sur</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, color: "#C9A96E", letterSpacing: "0.05em", marginBottom: 8 }}>ROBINVEST</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, color: "#C9A96E", letterSpacing: "0.05em", marginBottom: 8 }}>Rob'Invest</div>
           <div style={{ fontSize: 12, color: "#555" }}>Connecte-toi pour accéder à ton espace</div>
         </div>
         <form onSubmit={handleLogin}>
@@ -377,6 +379,383 @@ function BudgetSection({ db, clientId, isReadOnly }) {
   );
 }
 
+
+// ══════════════════════════════════════
+//  BOURSE SECTION
+// ══════════════════════════════════════
+function BourseSection({ db, clientId, isReadOnly }) {
+  const [actions, setActions] = useState([]);
+  const [quotes, setQuotes] = useState({});
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0], dividendes: "" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (clientId) loadActions(); }, [clientId]);
+
+  async function loadActions() {
+    try {
+      const a = await db.get("actions", `select=*&client_id=eq.${clientId}`);
+      setActions(a);
+      if (a.length > 0) fetchQuotes(a);
+    } catch(e) { console.error(e); }
+  }
+
+  async function fetchQuotes(acts) {
+    setLoadingQuotes(true);
+    const q = {};
+    await Promise.all(acts.map(async (a) => {
+      try {
+        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${a.ticker}&token=${FINNHUB_KEY}`);
+        const d = await r.json();
+        if (d.c) q[a.ticker] = { price: d.c, change: d.dp, prev: d.pc };
+      } catch(e) { console.error(e); }
+    }));
+    setQuotes(q);
+    setLoadingQuotes(false);
+  }
+
+  async function saveAction() {
+    if (!form.ticker || !form.nombre || !form.prix_achat) return;
+    setSaving(true);
+    try {
+      await db.post("actions", {
+        client_id: clientId,
+        ticker: form.ticker.toUpperCase().trim(),
+        nom: form.nom,
+        nombre: parseFloat(form.nombre),
+        prix_achat: parseFloat(form.prix_achat),
+        date_achat: form.date_achat,
+        dividendes: parseFloat(form.dividendes) || 0,
+      });
+      await loadActions();
+      setModal(false);
+      setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0], dividendes: "" });
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  async function delAction(id) {
+    if (!window.confirm("Supprimer cette position ?")) return;
+    try { await db.del("actions", id); await loadActions(); } catch(e) { alert(e.message); }
+  }
+
+  const totalInvesti = actions.reduce((s, a) => s + a.nombre * a.prix_achat, 0);
+  const totalValorise = actions.reduce((s, a) => {
+    const q = quotes[a.ticker];
+    return s + a.nombre * (q ? q.price : a.prix_achat);
+  }, 0);
+  const totalPV = totalValorise - totalInvesti;
+  const totalPVPct = totalInvesti > 0 ? ((totalPV / totalInvesti) * 100).toFixed(2) : 0;
+  const totalDividendes = actions.reduce((s, a) => s + (a.dividendes || 0), 0);
+
+  const pvColor = (pv) => pv >= 0 ? "#5EBF7A" : "#E07A7A";
+  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
+  const fmtPct = n => `${n >= 0 ? "+" : ""}${parseFloat(n).toFixed(2)}%`;
+
+  return (
+    <div>
+      {/* KPIs */}
+      <div className="grid-3" style={{ marginBottom: 20 }}>
+        {[
+          { label: "Valeur investie", val: fmt(totalInvesti), color: "#E2DDD6" },
+          { label: "Valorisation actuelle", val: fmt(totalValorise), color: totalPV >= 0 ? "#5EBF7A" : "#E07A7A" },
+          { label: "Plus/Moins value", val: `${fmt(totalPV)} (${fmtPct(totalPVPct)})`, color: pvColor(totalPV) },
+        ].map((k, i) => (
+          <div key={i} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: k.color }}>{k.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Dividendes banner */}
+      {totalDividendes > 0 && (
+        <div style={{ background: "#1A2A1F", border: "1px solid #5EBF7A30", borderRadius: 10, padding: "12px 18px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "#5EBF7A" }}>💰 Total dividendes perçus</span>
+          <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#5EBF7A" }}>{fmt(totalDividendes)}</span>
+        </div>
+      )}
+
+      {/* Header table */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+            Positions ({actions.length}) {loadingQuotes && <span style={{ color: "#C9A96E", marginLeft: 8 }}>↻ Actualisation...</span>}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => fetchQuotes(actions)} style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10 }}>↻ Actualiser</button>
+            {!isReadOnly && <button onClick={() => setModal(true)} style={{ padding: "5px 12px", background: "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>}
+          </div>
+        </div>
+
+        {actions.length === 0 && (
+          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>
+            Aucune position. {!isReadOnly && "Ajoute ta première action."}
+          </div>
+        )}
+
+        {/* Desktop table header */}
+        {actions.length > 0 && (
+          <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "8px 20px", borderBottom: "1px solid #1A1A1E" }}>
+            {["Titre", "Ticker", "Qté", "Px achat", "Px actuel", "Valeur", "+/- Value", "Divid."].map((h, i) => (
+              <div key={i} style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em" }}>{h}</div>
+            ))}
+          </div>
+        )}
+
+        {actions.map((a) => {
+          const q = quotes[a.ticker];
+          const prixActuel = q ? q.price : null;
+          const valeur = prixActuel ? a.nombre * prixActuel : null;
+          const pv = prixActuel ? (prixActuel - a.prix_achat) * a.nombre : null;
+          const pvPct = prixActuel ? ((prixActuel - a.prix_achat) / a.prix_achat * 100) : null;
+          const col = pv !== null ? pvColor(pv) : "#888";
+
+          return (
+            <div key={a.id} className="row" style={{ borderBottom: "1px solid #1A1A1E", transition: "background 0.15s" }}>
+              {/* Desktop row */}
+              <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "12px 20px", alignItems: "center" }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#E2DDD6" }}>{a.nom || a.ticker}</div>
+                <div style={{ fontSize: 11, color: "#C9A96E", fontWeight: 600 }}>{a.ticker}</div>
+                <div style={{ fontSize: 12, color: "#CCC" }}>{a.nombre}</div>
+                <div style={{ fontSize: 12, color: "#CCC" }}>{fmt(a.prix_achat)}</div>
+                <div style={{ fontSize: 12, color: prixActuel ? "#E2DDD6" : "#555" }}>{prixActuel ? fmt(prixActuel) : "—"}{q && <span style={{ fontSize: 9, color: pvColor(q.change), marginLeft: 4 }}>{fmtPct(q.change)}</span>}</div>
+                <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "—"}</div>
+                <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "—"}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 11, color: "#5EBF7A" }}>{a.dividendes > 0 ? fmt(a.dividendes) : "—"}</span>
+                  {!isReadOnly && <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11, marginLeft: 4 }}>✕</button>}
+                </div>
+              </div>
+
+              {/* Mobile row */}
+              <div className="show-mob-flex" style={{ padding: "12px 16px", flexDirection: "column" }}>
+                <div style={{ padding: "12px 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: "#E2DDD6" }}>{a.nom || a.ticker}</div>
+                      <div style={{ fontSize: 10, color: "#C9A96E" }}>{a.ticker} · {a.nombre} actions</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: prixActuel ? "#E2DDD6" : "#555" }}>{valeur ? fmt(valeur) : "—"}</div>
+                      {pv !== null && <div style={{ fontSize: 11, color: col }}>{fmt(pv)} ({fmtPct(pvPct)})</div>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555" }}>
+                    <span>Px achat : {fmt(a.prix_achat)}</span>
+                    <span>Px actuel : {prixActuel ? fmt(prixActuel) : "—"}</span>
+                    {a.dividendes > 0 && <span style={{ color: "#5EBF7A" }}>Divid. : {fmt(a.dividendes)}</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Note ticker */}
+      <div style={{ fontSize: 10, color: "#444", marginTop: 10, fontStyle: "italic" }}>
+        Exemples de tickers : AAPL (Apple), MC.PA (LVMH), TTE.PA (TotalEnergies), MSFT (Microsoft), AIR.PA (Airbus)
+      </div>
+
+      {/* Modal ajout */}
+      {modal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 420, maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouvelle position</div>
+            {[
+              ["ticker", "Ticker * (ex: AAPL, MC.PA)", "text", "AAPL"],
+              ["nom", "Nom de l'entreprise", "text", "Apple Inc."],
+              ["nombre", "Nombre d'actions *", "number", "10"],
+              ["prix_achat", "Prix d'achat unitaire (€) *", "number", "150.00"],
+              ["dividendes", "Dividendes perçus (€)", "number", "0"],
+            ].map(([k, l, t, ph]) => (
+              <div key={k} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
+                <input type={t} placeholder={ph} value={form[k] || ""} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
+                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+              </div>
+            ))}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Date d'achat</div>
+              <input type="date" value={form.date_achat} onChange={e => setForm(p => ({ ...p, date_achat: e.target.value }))}
+                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveAction} disabled={saving} style={{ flex: 1, padding: 10, background: "#C9A96E", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600 }}>{saving ? "..." : "Enregistrer"}</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12 }}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  IDENTIFICATION SECTION
+// ══════════════════════════════════════
+function IdentificationSection({ db, clientId, isReadOnly }) {
+  const [data, setData] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (clientId) loadData(); }, [clientId]);
+
+  async function loadData() {
+    try {
+      const d = await db.get("identification", `select=*&client_id=eq.${clientId}`);
+      if (d.length > 0) { setData(d[0]); setForm(d[0]); }
+      else { setData(null); setForm({ client_id: clientId }); }
+    } catch(e) { console.error(e); }
+  }
+
+  async function saveData() {
+    setSaving(true);
+    try {
+      if (data) {
+        await db.patch("identification", data.id, form);
+      } else {
+        await db.post("identification", { ...form, client_id: clientId });
+      }
+      await loadData();
+      setEditing(false);
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const PROFILS = ["Prudent", "Modéré", "Équilibré", "Dynamique", "Agressif"];
+  const HORIZONS = ["Court terme (< 3 ans)", "Moyen terme (3-7 ans)", "Long terme (> 7 ans)"];
+
+  const Field = ({ label, value, icon = "" }) => (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>{icon} {label}</div>
+      <div style={{ fontSize: 13, color: value ? "#E2DDD6" : "#444", fontStyle: value ? "normal" : "italic" }}>{value || "Non renseigné"}</div>
+    </div>
+  );
+
+  const Inp = ({ k, l, t = "text", ph = "" }) => (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
+      <input type={t} placeholder={ph} value={form[k] || ""} onChange={e => f(k, e.target.value)}
+        style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20 }}>Identification</div>
+        <button onClick={() => setEditing(!editing)}
+          style={{ padding: "7px 16px", background: editing ? "#1A1A1E" : "#C9A96E", border: editing ? "1px solid #333" : "none", borderRadius: 8, cursor: "pointer", color: editing ? "#777" : "#0C0C0E", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
+          {editing ? "Annuler" : "✏️ Modifier"}
+        </button>
+      </div>
+
+      {editing ? (
+        <div>
+          <div className="grid-2" style={{ marginBottom: 0 }}>
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Informations personnelles</div>
+              <Inp k="date_naissance" l="Date de naissance" t="date" />
+              <Inp k="profession" l="Profession" ph="Ingénieur, Chef d'entreprise..." />
+              <Inp k="situation_personnelle" l="Situation personnelle" ph="Marié, 2 enfants..." />
+              <Inp k="nb_enfants" l="Nombre d'enfants" t="number" ph="0" />
+              <Inp k="telephone" l="Téléphone" ph="+33 6 00 00 00 00" />
+              <Inp k="email" l="Email" t="email" ph="prenom@email.fr" />
+            </div>
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Adresse</div>
+              <Inp k="adresse" l="Adresse" ph="12 rue de la Paix" />
+              <Inp k="code_postal" l="Code postal" ph="75001" />
+              <Inp k="ville" l="Ville" ph="Paris" />
+              <Inp k="pays" l="Pays" ph="France" />
+            </div>
+          </div>
+
+          <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginTop: 14 }}>
+            <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Profil investisseur</div>
+            <div className="grid-2">
+              <div>
+                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Profil de risque</div>
+                <select value={form.profil_risque || "Modéré"} onChange={e => f("profil_risque", e.target.value)}
+                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
+                  {PROFILS.map(p => <option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Horizon d'investissement</div>
+                <select value={form.horizon_investissement || ""} onChange={e => f("horizon_investissement", e.target.value)}
+                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
+                  <option value="">Sélectionner...</option>
+                  {HORIZONS.map(h => <option key={h}>{h}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Objectif global</div>
+              <textarea value={form.objectif_global || ""} onChange={e => f("objectif_global", e.target.value)} placeholder="Construire un patrimoine pour la retraite, financer les études des enfants..."
+                style={{ width: "100%", minHeight: 70, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Description / Notes libres</div>
+              <textarea value={form.description || ""} onChange={e => f("description", e.target.value)} placeholder="Informations complémentaires..."
+                style={{ width: "100%", minHeight: 80, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <button onClick={saveData} disabled={saving}
+              style={{ padding: "10px 24px", background: "#C9A96E", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
+              {saving ? "Enregistrement..." : "Enregistrer"}
+            </button>
+            <button onClick={() => setEditing(false)}
+              style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="grid-2" style={{ marginBottom: 14 }}>
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Informations personnelles</div>
+              <Field label="Date de naissance" value={data?.date_naissance ? new Date(data.date_naissance).toLocaleDateString("fr-FR") : null} />
+              <Field label="Profession" value={data?.profession} />
+              <Field label="Situation personnelle" value={data?.situation_personnelle} />
+              <Field label="Nombre d'enfants" value={data?.nb_enfants !== undefined ? data.nb_enfants : null} />
+              <Field label="Téléphone" value={data?.telephone} />
+              <Field label="Email" value={data?.email} />
+            </div>
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Adresse</div>
+              <Field label="Adresse" value={data?.adresse} />
+              <Field label="Code postal" value={data?.code_postal} />
+              <Field label="Ville" value={data?.ville} />
+              <Field label="Pays" value={data?.pays} />
+              <div style={{ marginTop: 16, borderTop: "1px solid #1A1A1E", paddingTop: 14 }}>
+                <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Profil investisseur</div>
+                <Field label="Profil de risque" value={data?.profil_risque} />
+                <Field label="Horizon d'investissement" value={data?.horizon_investissement} />
+              </div>
+            </div>
+          </div>
+          {(data?.objectif_global || data?.description) && (
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              {data?.objectif_global && <><div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Objectif global</div><div style={{ fontSize: 13, color: "#E2DDD6", lineHeight: 1.6, marginBottom: 14 }}>{data.objectif_global}</div></>}
+              {data?.description && <><div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Notes</div><div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.6 }}>{data.description}</div></>}
+            </div>
+          )}
+          {!data && <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "30px 0" }}>Aucune information renseignée. Clique sur "Modifier" pour commencer.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
@@ -493,7 +872,7 @@ function AdminApp({ db, onLogout }) {
   const Logo = () => (
     <div style={{padding:"24px 20px 16px",borderBottom:"1px solid #1A1A1E"}}>
       <div style={{fontSize:9,letterSpacing:"0.25em",color:"#444",textTransform:"uppercase",marginBottom:3}}>Espace admin</div>
-      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>ROBINVEST</div>
+      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
     </div>
   );
 
@@ -600,7 +979,7 @@ function AdminApp({ db, onLogout }) {
               </div>
 
               <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
-                {[["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["budget","Budget"],["notes","Notes"]].map(([k,l])=>(
+                {[["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["bourse","Bourse"],["budget","Budget"],["identification","Identification"],["notes","Notes"]].map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
                     style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
                     {l}
@@ -747,6 +1126,8 @@ function AdminApp({ db, onLogout }) {
                 )}
 
                 {tab==="budget"&&<BudgetSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
+                {tab==="bourse"&&<BourseSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
+                {tab==="identification"&&<IdentificationSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
 
                 {tab==="notes"&&(
                   <div>
@@ -903,7 +1284,7 @@ function ClientApp({ db, userId, onLogout }) {
   if (loading) return <div style={{minHeight:"100vh",background:"#0C0C0E",display:"flex",alignItems:"center",justifyContent:"center",color:"#555",fontFamily:"'DM Sans',sans-serif"}}>Chargement...</div>;
   if (!client) return (
     <div style={{minHeight:"100vh",background:"#0C0C0E",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",color:"#555",flexDirection:"column",gap:16}}>
-      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#C9A96E",letterSpacing:"0.08em"}}>ROBINVEST</div>
+      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
       <div style={{fontSize:13}}>Aucun profil trouvé. Contacte ton conseiller.</div>
       <button onClick={onLogout} style={{padding:"8px 20px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12,fontFamily:"inherit"}}>Déconnexion</button>
     </div>
@@ -918,7 +1299,7 @@ function ClientApp({ db, userId, onLogout }) {
       {/* Header */}
       <div className="header-pad" style={{borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#0F0F11"}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>ROBINVEST</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
           <div style={{width:1,height:20,background:"#222"}}/>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{width:32,height:32,borderRadius:"50%",background:`${color}18`,border:`1.5px solid ${color}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color}}>{initials(client.nom)}</div>
@@ -937,7 +1318,7 @@ function ClientApp({ db, userId, onLogout }) {
 
       {/* Tabs */}
       <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
-        {[["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["budget","Mon budget"]].map(([k,l])=>(
+        {[["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["bourse","Ma bourse"],["budget","Mon budget"],["identification","Mon profil"]].map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
             style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
             {l}
@@ -1066,6 +1447,8 @@ function ClientApp({ db, userId, onLogout }) {
         )}
 
         {tab==="budget"&&<BudgetSection db={db} clientId={client.id} isReadOnly={false}/>}
+        {tab==="bourse"&&<BourseSection db={db} clientId={client.id} isReadOnly={false}/>}
+        {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
       </div>
 
       {/* MODALS CLIENT */}
