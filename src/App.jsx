@@ -630,7 +630,8 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
   async function saveData() {
     setSaving(true);
     try {
-      const payload = formRef.current;
+      // Exclure id et client_id du payload pour éviter l'erreur Supabase
+      const { id, client_id, ...payload } = formRef.current;
       if (data) {
         await db.patch("identification", data.id, payload);
       } else {
