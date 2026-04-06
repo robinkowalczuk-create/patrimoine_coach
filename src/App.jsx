@@ -388,7 +388,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
   const [quotes, setQuotes] = useState({});
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0], dividendes: "" });
+  const [form, setForm] = useState({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => { if (clientId) loadActions(); }, [clientId]);
@@ -426,11 +426,10 @@ function BourseSection({ db, clientId, isReadOnly }) {
         nombre: parseFloat(form.nombre),
         prix_achat: parseFloat(form.prix_achat),
         date_achat: form.date_achat,
-        dividendes: parseFloat(form.dividendes) || 0,
       });
       await loadActions();
       setModal(false);
-      setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0], dividendes: "" });
+      setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
     } catch(e) { alert("Erreur : " + e.message); }
     setSaving(false);
   }
@@ -447,7 +446,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
   }, 0);
   const totalPV = totalValorise - totalInvesti;
   const totalPVPct = totalInvesti > 0 ? ((totalPV / totalInvesti) * 100).toFixed(2) : 0;
-  const totalDividendes = actions.reduce((s, a) => s + (a.dividendes || 0), 0);
+  const totalDividendes = 0; // moved to DividendesSection
 
   const pvColor = (pv) => pv >= 0 ? "#5EBF7A" : "#E07A7A";
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
@@ -469,13 +468,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
         ))}
       </div>
 
-      {/* Dividendes banner */}
-      {totalDividendes > 0 && (
-        <div style={{ background: "#1A2A1F", border: "1px solid #5EBF7A30", borderRadius: 10, padding: "12px 18px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#5EBF7A" }}>💰 Total dividendes perçus</span>
-          <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#5EBF7A" }}>{fmt(totalDividendes)}</span>
-        </div>
-      )}
+
 
       {/* Header table */}
       <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
@@ -498,7 +491,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
         {/* Desktop table header */}
         {actions.length > 0 && (
           <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "8px 20px", borderBottom: "1px solid #1A1A1E" }}>
-            {["Titre", "Ticker", "Qté", "Px achat", "Px actuel", "Valeur", "+/- Value", "Divid."].map((h, i) => (
+            {["Titre", "Ticker", "Qté", "Px achat", "Px actuel", "Valeur", "+/- Value"].map((h, i) => (
               <div key={i} style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em" }}>{h}</div>
             ))}
           </div>
@@ -524,8 +517,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
                 <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "—"}</div>
                 <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "—"}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 11, color: "#5EBF7A" }}>{a.dividendes > 0 ? fmt(a.dividendes) : "—"}</span>
-                  {!isReadOnly && <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11, marginLeft: 4 }}>✕</button>}
+                  {!isReadOnly && <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>}
                 </div>
               </div>
 
@@ -545,7 +537,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555" }}>
                     <span>Px achat : {fmt(a.prix_achat)}</span>
                     <span>Px actuel : {prixActuel ? fmt(prixActuel) : "—"}</span>
-                    {a.dividendes > 0 && <span style={{ color: "#5EBF7A" }}>Divid. : {fmt(a.dividendes)}</span>}
+
                   </div>
                 </div>
               </div>
@@ -569,7 +561,6 @@ function BourseSection({ db, clientId, isReadOnly }) {
               ["nom", "Nom de l'entreprise", "text", "Apple Inc."],
               ["nombre", "Nombre d'actions *", "number", "10"],
               ["prix_achat", "Prix d'achat unitaire (€) *", "number", "150.00"],
-              ["dividendes", "Dividendes perçus (€)", "number", "0"],
             ].map(([k, l, t, ph]) => (
               <div key={k} style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
@@ -757,6 +748,197 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
 }
 
 // ══════════════════════════════════════
+//  DIVIDENDES SECTION
+// ══════════════════════════════════════
+function DividendesSection({ db, clientId, isReadOnly }) {
+  const [dividendes, setDividendes] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { if (clientId) loadDividendes(); }, [clientId]);
+
+  async function loadDividendes() {
+    try {
+      const d = await db.get("dividendes", `select=*&client_id=eq.${clientId}&order=annee.desc,entreprise`);
+      setDividendes(d);
+    } catch(e) { console.error(e); }
+  }
+
+  async function saveDividende() {
+    if (!form.entreprise.trim() || !form.montant || !form.annee) return;
+    setSaving(true);
+    try {
+      await db.post("dividendes", {
+        client_id: clientId,
+        entreprise: form.entreprise,
+        support: form.support,
+        annee: parseInt(form.annee),
+        montant: parseFloat(form.montant),
+      });
+      await loadDividendes();
+      setModal(false);
+      setForm({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  async function delDividende(id) {
+    try { await db.del("dividendes", id); await loadDividendes(); } catch(e) { alert(e.message); }
+  }
+
+  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
+
+  // Totaux par année
+  const parAnnee = dividendes.reduce((acc, d) => {
+    if (!acc[d.annee]) acc[d.annee] = { annee: d.annee, total: 0 };
+    acc[d.annee].total += d.montant;
+    return acc;
+  }, {});
+  const anneesTriees = Object.values(parAnnee).sort((a, b) => b.annee - a.annee);
+
+  // Totaux par entreprise
+  const parEntreprise = dividendes.reduce((acc, d) => {
+    const key = d.entreprise;
+    if (!acc[key]) acc[key] = { entreprise: key, total: 0, count: 0 };
+    acc[key].total += d.montant;
+    acc[key].count++;
+    return acc;
+  }, {});
+  const entreprisesTriees = Object.values(parEntreprise).sort((a, b) => b.total - a.total);
+
+  const totalGlobal = dividendes.reduce((s, d) => s + d.montant, 0);
+
+  // Group by année for display
+  const groupedByAnnee = dividendes.reduce((acc, d) => {
+    if (!acc[d.annee]) acc[d.annee] = [];
+    acc[d.annee].push(d);
+    return acc;
+  }, {});
+
+  // Chart data - par année
+  const chartData = anneesTriees.slice().reverse().map(a => ({ annee: String(a.annee), total: a.total }));
+
+  return (
+    <div>
+      {/* KPIs */}
+      <div className="grid-3" style={{ marginBottom: 20 }}>
+        {[
+          { label: "Total dividendes", val: fmt(totalGlobal), color: "#5EBF7A" },
+          { label: "Années de perception", val: anneesTriees.length, color: "#E2DDD6" },
+          { label: "Entreprises", val: entreprisesTriees.length, color: "#E2DDD6" },
+        ].map((k, i) => (
+          <div key={i} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid-budget" style={{ marginBottom: 20 }}>
+        {/* Graphique par année */}
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Dividendes par année</div>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} barSize={32}>
+                <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
+                <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                <Bar dataKey="total" fill="#5EBF7A" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
+        </div>
+
+        {/* Récap par entreprise */}
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Par entreprise</div>
+          {entreprisesTriees.length === 0 && <div style={{ color: "#444", fontSize: 12 }}>Aucune donnée</div>}
+          {entreprisesTriees.map((e, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #1A1A1E" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#CCC" }}>{e.entreprise}</div>
+                <div style={{ fontSize: 10, color: "#555" }}>{e.count} versement{e.count > 1 ? "s" : ""}</div>
+              </div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(e.total)}</div>
+            </div>
+          ))}
+          {totalGlobal > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 0", marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: "#888", fontWeight: 500 }}>Total global</div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#5EBF7A" }}>{fmt(totalGlobal)}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Liste par année */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Détail des versements</div>
+          {!isReadOnly && (
+            <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: "#5EBF7A", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>
+          )}
+        </div>
+
+        {dividendes.length === 0 && (
+          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun dividende enregistré.</div>
+        )}
+
+        {anneesTriees.map(({ annee, total }) => (
+          <div key={annee}>
+            {/* Année header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px", background: "#141416", borderBottom: "1px solid #1A1A1E" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#E2DDD6" }}>{annee}</div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(total)}</div>
+            </div>
+            {/* Lignes */}
+            {(groupedByAnnee[annee] || []).map(d => (
+              <div key={d.id} className="row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #1A1A1E", transition: "background 0.15s" }}>
+                <div>
+                  <div style={{ fontSize: 12, color: "#CCC" }}>{d.entreprise}</div>
+                  {d.support && <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>📦 {d.support}</div>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(d.montant)}</div>
+                  {!isReadOnly && <button onClick={() => delDividende(d.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Modal ajout */}
+      {modal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 400, maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouveau dividende</div>
+            {[
+              ["entreprise", "Entreprise *", "text", "Apple, LVMH..."],
+              ["support", "Support (compte/enveloppe)", "text", "PEA, CTO, Assurance Vie..."],
+              ["annee", "Année *", "number", String(new Date().getFullYear())],
+              ["montant", "Montant perçu (€) *", "number", "150.00"],
+            ].map(([k, l, t, ph]) => (
+              <div key={k} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
+                <input type={t} placeholder={ph} value={form[k] || ""} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
+                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              <button onClick={saveDividende} disabled={saving} style={{ flex: 1, padding: 10, background: "#5EBF7A", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
 function AdminApp({ db, onLogout }) {
@@ -769,7 +951,7 @@ function AdminApp({ db, onLogout }) {
   const [objProduits, setObjProduits] = useState([]);
   const [notes, setNotes] = useState({});
   const [page, setPage] = useState("global");
-  const [tab, setTab] = useState("synthese");
+  const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -979,7 +1161,7 @@ function AdminApp({ db, onLogout }) {
               </div>
 
               <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
-                {[["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["bourse","Bourse"],["budget","Budget"],["identification","Identification"],["notes","Notes"]].map(([k,l])=>(
+                {[["identification","Identification"],["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["bourse","Bourse"],["dividendes","Dividendes"],["budget","Budget"],["notes","Notes"]].map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
                     style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
                     {l}
@@ -1127,6 +1309,7 @@ function AdminApp({ db, onLogout }) {
 
                 {tab==="budget"&&<BudgetSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="bourse"&&<BourseSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
+                {tab==="dividendes"&&<DividendesSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="identification"&&<IdentificationSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
 
                 {tab==="notes"&&(
@@ -1198,7 +1381,7 @@ function ClientApp({ db, userId, onLogout }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
-  const [tab, setTab] = useState("synthese");
+  const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -1318,7 +1501,7 @@ function ClientApp({ db, userId, onLogout }) {
 
       {/* Tabs */}
       <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
-        {[["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["bourse","Ma bourse"],["budget","Mon budget"],["identification","Mon profil"]].map(([k,l])=>(
+        {[["identification","Mon profil"],["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["bourse","Ma bourse"],["dividendes","Mes dividendes"],["budget","Mon budget"]].map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
             style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
             {l}
@@ -1448,6 +1631,7 @@ function ClientApp({ db, userId, onLogout }) {
 
         {tab==="budget"&&<BudgetSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="bourse"&&<BourseSection db={db} clientId={client.id} isReadOnly={false}/>}
+        {tab==="dividendes"&&<DividendesSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
       </div>
 
