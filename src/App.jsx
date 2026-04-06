@@ -614,26 +614,27 @@ function BourseSection({ db, clientId, isReadOnly }) {
 function IdentificationSection({ db, clientId, isReadOnly }) {
   const [data, setData] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const formRef = React.useRef({});
 
   useEffect(() => { if (clientId) loadData(); }, [clientId]);
 
   async function loadData() {
     try {
       const d = await db.get("identification", `select=*&client_id=eq.${clientId}`);
-      if (d.length > 0) { setData(d[0]); setForm(d[0]); }
-      else { setData(null); setForm({ client_id: clientId }); }
+      if (d.length > 0) { setData(d[0]); formRef.current = { ...d[0] }; }
+      else { setData(null); formRef.current = { client_id: clientId }; }
     } catch(e) { console.error(e); }
   }
 
   async function saveData() {
     setSaving(true);
     try {
+      const payload = formRef.current;
       if (data) {
-        await db.patch("identification", data.id, form);
+        await db.patch("identification", data.id, payload);
       } else {
-        await db.post("identification", { ...form, client_id: clientId });
+        await db.post("identification", { ...payload, client_id: clientId });
       }
       await loadData();
       setEditing(false);
@@ -641,7 +642,8 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
     setSaving(false);
   }
 
-  const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const f = (k, v) => { formRef.current = { ...formRef.current, [k]: v }; };
+  const fv = (k) => formRef.current[k] || "";
   const PROFILS = ["Prudent", "Modéré", "Équilibré", "Dynamique", "Agressif"];
   const HORIZONS = ["Court terme (< 3 ans)", "Moyen terme (3-7 ans)", "Long terme (> 7 ans)"];
 
@@ -663,38 +665,38 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
       </div>
 
       {editing ? (
-        <div>
+        <div key="ident-edit">
           <div className="grid-2" style={{ marginBottom: 0 }}>
             <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Informations personnelles</div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Date de naissance</div>
-              <input type="date" placeholder="" value={form["date_naissance"] || ""} onChange={e => f("date_naissance", e.target.value)}
+              <input type="date" placeholder="" defaultValue={fv("date_naissance")} onChange={e => f("date_naissance", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Profession</div>
-              <input type="text" placeholder="Ingénieur, Chef d'entreprise..." value={form["profession"] || ""} onChange={e => f("profession", e.target.value)}
+              <input type="text" placeholder="Ingénieur, Chef d'entreprise..." defaultValue={fv("profession")} onChange={e => f("profession", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Situation personnelle</div>
-              <input type="text" placeholder="Marié, 2 enfants..." value={form["situation_personnelle"] || ""} onChange={e => f("situation_personnelle", e.target.value)}
+              <input type="text" placeholder="Marié, 2 enfants..." defaultValue={fv("situation_personnelle")} onChange={e => f("situation_personnelle", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Nombre d'enfants</div>
-              <input type="number" placeholder="0" value={form["nb_enfants"] || ""} onChange={e => f("nb_enfants", e.target.value)}
+              <input type="number" placeholder="0" defaultValue={fv("nb_enfants")} onChange={e => f("nb_enfants", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Téléphone</div>
-              <input type="text" placeholder="+33 6 00 00 00 00" value={form["telephone"] || ""} onChange={e => f("telephone", e.target.value)}
+              <input type="text" placeholder="+33 6 00 00 00 00" defaultValue={fv("telephone")} onChange={e => f("telephone", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Email</div>
-              <input type="email" placeholder="prenom@email.fr" value={form["email"] || ""} onChange={e => f("email", e.target.value)}
+              <input type="email" placeholder="prenom@email.fr" defaultValue={fv("email")} onChange={e => f("email", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
             </div>
@@ -702,22 +704,22 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Adresse</div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Adresse</div>
-              <input type="text" placeholder="12 rue de la Paix" value={form["adresse"] || ""} onChange={e => f("adresse", e.target.value)}
+              <input type="text" placeholder="12 rue de la Paix" defaultValue={fv("adresse")} onChange={e => f("adresse", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Code postal</div>
-              <input type="text" placeholder="75001" value={form["code_postal"] || ""} onChange={e => f("code_postal", e.target.value)}
+              <input type="text" placeholder="75001" defaultValue={fv("code_postal")} onChange={e => f("code_postal", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Ville</div>
-              <input type="text" placeholder="Paris" value={form["ville"] || ""} onChange={e => f("ville", e.target.value)}
+              <input type="text" placeholder="Paris" defaultValue={fv("ville")} onChange={e => f("ville", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Pays</div>
-              <input type="text" placeholder="France" value={form["pays"] || ""} onChange={e => f("pays", e.target.value)}
+              <input type="text" placeholder="France" defaultValue={fv("pays")} onChange={e => f("pays", e.target.value)}
                 style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
             </div>
             </div>
@@ -728,14 +730,14 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
             <div className="grid-2">
               <div>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Profil de risque</div>
-                <select value={form.profil_risque || "Modéré"} onChange={e => f("profil_risque", e.target.value)}
+                <select defaultValue={fv("profil_risque") || "Modéré"} onChange={e => f("profil_risque", e.target.value)}
                   style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
                   {PROFILS.map(p => <option key={p}>{p}</option>)}
                 </select>
               </div>
               <div>
                 <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Horizon d'investissement</div>
-                <select value={form.horizon_investissement || ""} onChange={e => f("horizon_investissement", e.target.value)}
+                <select defaultValue={fv("horizon_investissement")} onChange={e => f("horizon_investissement", e.target.value)}
                   style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
                   <option value="">Sélectionner...</option>
                   {HORIZONS.map(h => <option key={h}>{h}</option>)}
@@ -744,12 +746,12 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
             </div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Objectif global</div>
-              <textarea value={form.objectif_global || ""} onChange={e => f("objectif_global", e.target.value)} placeholder="Construire un patrimoine pour la retraite, financer les études des enfants..."
+              <textarea defaultValue={fv("objectif_global")} onChange={e => f("objectif_global", e.target.value)} placeholder="Construire un patrimoine pour la retraite, financer les études des enfants..."
                 style={{ width: "100%", minHeight: 70, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
             </div>
             <div>
               <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Description / Notes libres</div>
-              <textarea value={form.description || ""} onChange={e => f("description", e.target.value)} placeholder="Informations complémentaires..."
+              <textarea defaultValue={fv("description")} onChange={e => f("description", e.target.value)} placeholder="Informations complémentaires..."
                 style={{ width: "100%", minHeight: 80, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
             </div>
           </div>
