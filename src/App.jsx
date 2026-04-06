@@ -76,12 +76,26 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric
 const initials = n => n ? n.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 const pct = (a, b) => b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0;
 
-const EMPTY_CLIENT = { nom: "", age: "", statut: "En bonne voie", date_debut: "", mensualite: "", patrimoine_cible: "" };
+const EMPTY_CLIENT = { nom: "", statut: "En bonne voie", date_debut: "", patrimoine_cible: "" };
 const EMPTY_PRODUIT = { nom: "", categorie: "Épargne" };
 const EMPTY_AVOIR = { montant: "", date: new Date().toISOString().split("T")[0] };
 const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
+
+const ALL_TABS = ["identification","synthese","objectifs","evolution","bourse","dividendes","budget","notes"];
+const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", evolution:"Évolution", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
+const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", evolution:"Mon évolution", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
+
+function getAge(dateNaissance) {
+  if (!dateNaissance) return null;
+  const today = new Date();
+  const birth = new Date(dateNaissance);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
 
 // ══════════════════════════════════════
 //  SHARED STYLES
@@ -758,6 +772,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
 }
 
 // ══════════════════════════════════════
+// ══════════════════════════════════════
 //  DIVIDENDES SECTION
 // ══════════════════════════════════════
 function DividendesSection({ db, clientId, isReadOnly }) {
@@ -765,6 +780,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
   const [saving, setSaving] = useState(false);
+  const CURRENT_YEAR = new Date().getFullYear();
 
   useEffect(() => { if (clientId) loadDividendes(); }, [clientId]);
 
@@ -779,16 +795,10 @@ function DividendesSection({ db, clientId, isReadOnly }) {
     if (!form.entreprise.trim() || !form.montant || !form.annee) return;
     setSaving(true);
     try {
-      await db.post("dividendes", {
-        client_id: clientId,
-        entreprise: form.entreprise,
-        support: form.support,
-        annee: parseInt(form.annee),
-        montant: parseFloat(form.montant),
-      });
+      await db.post("dividendes", { client_id: clientId, entreprise: form.entreprise, support: form.support, annee: parseInt(form.annee), montant: parseFloat(form.montant) });
       await loadDividendes();
       setModal(false);
-      setForm({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
+      setForm({ entreprise: "", support: "", annee: CURRENT_YEAR, montant: "" });
     } catch(e) { alert("Erreur : " + e.message); }
     setSaving(false);
   }
@@ -799,125 +809,123 @@ function DividendesSection({ db, clientId, isReadOnly }) {
 
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
 
-  // Totaux par année
-  const parAnnee = dividendes.reduce((acc, d) => {
-    if (!acc[d.annee]) acc[d.annee] = { annee: d.annee, total: 0 };
-    acc[d.annee].total += d.montant;
-    return acc;
-  }, {});
-  const anneesTriees = Object.values(parAnnee).sort((a, b) => b.annee - a.annee);
-
-  // Totaux par entreprise
-  const parEntreprise = dividendes.reduce((acc, d) => {
-    const key = d.entreprise;
-    if (!acc[key]) acc[key] = { entreprise: key, total: 0, count: 0 };
-    acc[key].total += d.montant;
-    acc[key].count++;
-    return acc;
-  }, {});
-  const entreprisesTriees = Object.values(parEntreprise).sort((a, b) => b.total - a.total);
-
+  // Totaux
   const totalGlobal = dividendes.reduce((s, d) => s + d.montant, 0);
+  const totalAnneeEnCours = dividendes.filter(d => d.annee === CURRENT_YEAR).reduce((s, d) => s + d.montant, 0);
 
-  // Group by année for display
-  const groupedByAnnee = dividendes.reduce((acc, d) => {
-    if (!acc[d.annee]) acc[d.annee] = [];
-    acc[d.annee].push(d);
-    return acc;
-  }, {});
+  // Années distinctes triées desc
+  const annees = [...new Set(dividendes.map(d => d.annee))].sort((a, b) => b - a);
 
-  // Chart data - par année
-  const chartData = anneesTriees.slice().reverse().map(a => ({ annee: String(a.annee), total: a.total }));
+  // Entreprises distinctes
+  const entreprises = [...new Set(dividendes.map(d => d.entreprise))].sort();
+
+  // Matrice entreprise x année
+  const matrix = {};
+  entreprises.forEach(e => {
+    matrix[e] = {};
+    annees.forEach(a => { matrix[e][a] = 0; });
+  });
+  dividendes.forEach(d => {
+    if (!matrix[d.entreprise]) matrix[d.entreprise] = {};
+    matrix[d.entreprise][d.annee] = (matrix[d.entreprise][d.annee] || 0) + d.montant;
+  });
+
+  // Total par année
+  const totalParAnnee = {};
+  annees.forEach(a => {
+    totalParAnnee[a] = dividendes.filter(d => d.annee === a).reduce((s, d) => s + d.montant, 0);
+  });
+
+  // Total par entreprise
+  const totalParEntreprise = {};
+  entreprises.forEach(e => {
+    totalParEntreprise[e] = dividendes.filter(d => d.entreprise === e).reduce((s, d) => s + d.montant, 0);
+  });
+
+  // Chart data - par année croissant
+  const chartData = [...annees].reverse().map(a => ({ annee: String(a), total: totalParAnnee[a] }));
 
   return (
     <div>
       {/* KPIs */}
       <div className="grid-3" style={{ marginBottom: 20 }}>
-        {[
-          { label: "Total dividendes", val: fmt(totalGlobal), color: "#5EBF7A" },
-          { label: "Années de perception", val: anneesTriees.length, color: "#E2DDD6" },
-          { label: "Entreprises", val: entreprisesTriees.length, color: "#E2DDD6" },
-        ].map((k, i) => (
-          <div key={i} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid-budget" style={{ marginBottom: 20 }}>
-        {/* Graphique par année */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Dividendes par année</div>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={chartData} barSize={32}>
-                <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
-                <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
-                <Bar dataKey="total" fill="#5EBF7A" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
+        <div style={{ background: "#1A2A1F", border: "1px solid #5EBF7A30", borderRadius: 10, padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, color: "#5EBF7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {CURRENT_YEAR}</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#5EBF7A" }}>{fmt(totalAnneeEnCours)}</div>
         </div>
-
-        {/* Récap par entreprise */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Par entreprise</div>
-          {entreprisesTriees.length === 0 && <div style={{ color: "#444", fontSize: 12 }}>Aucune donnée</div>}
-          {entreprisesTriees.map((e, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #1A1A1E" }}>
-              <div>
-                <div style={{ fontSize: 12, color: "#CCC" }}>{e.entreprise}</div>
-                <div style={{ fontSize: 10, color: "#555" }}>{e.count} versement{e.count > 1 ? "s" : ""}</div>
-              </div>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(e.total)}</div>
-            </div>
-          ))}
-          {totalGlobal > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0 0", marginTop: 4 }}>
-              <div style={{ fontSize: 11, color: "#888", fontWeight: 500 }}>Total global</div>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: "#5EBF7A" }}>{fmt(totalGlobal)}</div>
-            </div>
-          )}
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Total global</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalGlobal)}</div>
+        </div>
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Entreprises</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{entreprises.length}</div>
         </div>
       </div>
 
-      {/* Liste par année */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
+      {/* Graphique */}
+      {chartData.length > 0 && (
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={chartData} barSize={36}>
+              <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
+              <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+              <Bar dataKey="total" fill="#5EBF7A" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Tableau croisé entreprise x année */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Détail des versements</div>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Récapitulatif par entreprise & année</div>
           {!isReadOnly && (
-            <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: "#5EBF7A", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>
+            <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: "#5EBF7A", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>+ Ajouter</button>
           )}
         </div>
 
-        {dividendes.length === 0 && (
+        {entreprises.length === 0 ? (
           <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun dividende enregistré.</div>
-        )}
-
-        {anneesTriees.map(({ annee, total }) => (
-          <div key={annee}>
-            {/* Année header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px", background: "#141416", borderBottom: "1px solid #1A1A1E" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#E2DDD6" }}>{annee}</div>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(total)}</div>
-            </div>
-            {/* Lignes */}
-            {(groupedByAnnee[annee] || []).map(d => (
-              <div key={d.id} className="row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid #1A1A1E", transition: "background 0.15s" }}>
-                <div>
-                  <div style={{ fontSize: 12, color: "#CCC" }}>{d.entreprise}</div>
-                  {d.support && <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>📦 {d.support}</div>}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#5EBF7A" }}>{fmt(d.montant)}</div>
-                  {!isReadOnly && <button onClick={() => delDividende(d.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>}
-                </div>
-              </div>
-            ))}
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
+                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>Entreprise</th>
+                  {annees.map(a => (
+                    <th key={a} style={{ padding: "10px 16px", textAlign: "right", fontSize: 9, color: a === CURRENT_YEAR ? "#5EBF7A" : "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>{a}</th>
+                  ))}
+                  <th style={{ padding: "10px 20px", textAlign: "right", fontSize: 9, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entreprises.map((e, ei) => (
+                  <tr key={e} style={{ borderBottom: "1px solid #1A1A1E", background: ei % 2 === 0 ? "transparent" : "#0A0A0C" }}>
+                    <td style={{ padding: "10px 20px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
+                    {annees.map(a => (
+                      <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: matrix[e][a] > 0 ? "#E2DDD6" : "#333", fontWeight: matrix[e][a] > 0 ? 500 : 400 }}>
+                        {matrix[e][a] > 0 ? fmt(matrix[e][a]) : "—"}
+                      </td>
+                    ))}
+                    <td style={{ padding: "10px 20px", textAlign: "right", color: "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParEntreprise[e])}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid #2A2A2A" }}>
+                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total</td>
+                  {annees.map(a => (
+                    <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: a === CURRENT_YEAR ? "#5EBF7A" : "#C9A96E", fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontWeight: 600 }}>{fmt(totalParAnnee[a])}</td>
+                  ))}
+                  <td style={{ padding: "10px 20px", textAlign: "right", color: "#5EBF7A", fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600 }}>{fmt(totalGlobal)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Modal ajout */}
@@ -927,8 +935,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouveau dividende</div>
             {[
               ["entreprise", "Entreprise *", "text", "Apple, LVMH..."],
-              ["support", "Support (compte/enveloppe)", "text", "PEA, CTO, Assurance Vie..."],
-              ["annee", "Année *", "number", String(new Date().getFullYear())],
+              ["support", "Support (PEA, CTO, AV...)", "text", "PEA"],
+              ["annee", "Année *", "number", String(CURRENT_YEAR)],
               ["montant", "Montant perçu (€) *", "number", "150.00"],
             ].map(([k, l, t, ph]) => (
               <div key={k} style={{ marginBottom: 14 }}>
@@ -960,6 +968,7 @@ function AdminApp({ db, onLogout }) {
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
   const [notes, setNotes] = useState({});
+  const [identifications, setIdentifications] = useState({});
   const [page, setPage] = useState("global");
   const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
@@ -979,12 +988,14 @@ function AdminApp({ db, onLogout }) {
 
   async function loadClientData(cid) {
     try {
-      const [p,a,o] = await Promise.all([
+      const [p,a,o,ident] = await Promise.all([
         db.get("produits",`select=*&client_id=eq.${cid}`),
         db.get("avoirs",`select=*&client_id=eq.${cid}&order=date`),
         db.get("objectifs",`select=*&client_id=eq.${cid}`),
+        db.get("identification",`select=*&client_id=eq.${cid}`),
       ]);
       setProduits(p); setAvoirs(a); setObjectifs(o);
+      if(ident.length>0) setIdentifications(prev=>({...prev,[cid]:ident[0]}));
       if (o.length>0) {
         const ids = o.map(x=>x.id).join(",");
         const [j,op] = await Promise.all([
@@ -1013,8 +1024,8 @@ function AdminApp({ db, onLogout }) {
   async function save() {
     setSaving(true);
     try {
-      if (modal.type==="client_new") { const c=await db.post("clients",{ ...form, patrimoine_cible: parseFloat(form.patrimoine_cible)||0, mensualite: parseFloat(form.mensualite)||0 }); await loadAll(); setActiveClient(c[0]); setPage("client"); setTab("synthese"); }
-      else if (modal.type==="client_edit") { await db.patch("clients",activeClient.id,{ ...form, patrimoine_cible:parseFloat(form.patrimoine_cible)||0, mensualite:parseFloat(form.mensualite)||0 }); setActiveClient({...activeClient,...form}); await loadAll(); }
+      if (modal.type==="client_new") { const c=await db.post("clients",{ ...form, patrimoine_cible: parseFloat(form.patrimoine_cible)||0 }); await loadAll(); setActiveClient(c[0]); setPage("client"); setTab("synthese"); }
+      else if (modal.type==="client_edit") { await db.patch("clients",activeClient.id,{ ...form, patrimoine_cible:parseFloat(form.patrimoine_cible)||0 }); setActiveClient({...activeClient,...form}); await loadAll(); }
       else if (modal.type==="produit_new") { await db.post("produits",{...form,client_id:activeClient.id}); await loadClientData(activeClient.id); }
       else if (modal.type==="avoir_new") { await db.post("avoirs",{montant:parseFloat(form.montant),date:form.date,client_id:activeClient.id,produit_id:modal.produit_id}); await loadClientData(activeClient.id); }
       else if (modal.type==="objectif_new") { await db.post("objectifs",{nom:form.nom,montant_cible:parseFloat(form.montant_cible),description:form.description,client_id:activeClient.id}); await loadClientData(activeClient.id); }
@@ -1038,7 +1049,7 @@ function AdminApp({ db, onLogout }) {
   function openModal(type,extra={}) {
     const d = {
       client_new: EMPTY_CLIENT,
-      client_edit: { nom:activeClient?.nom||"", age:activeClient?.age||"", statut:activeClient?.statut||"En bonne voie", date_debut:activeClient?.date_debut||"", mensualite:activeClient?.mensualite||"", patrimoine_cible:activeClient?.patrimoine_cible||"" },
+      client_edit: { nom:activeClient?.nom||"", statut:activeClient?.statut||"En bonne voie", date_debut:activeClient?.date_debut||"", patrimoine_cible:activeClient?.patrimoine_cible||"", onglets_actifs:activeClient?.onglets_actifs||ALL_TABS },
       produit_new: EMPTY_PRODUIT, avoir_new: EMPTY_AVOIR, objectif_new: EMPTY_OBJECTIF, jalon_new: EMPTY_JALON, lier_produit: {},
     };
     setForm(d[type]||{}); setModal({type,...extra});
@@ -1095,7 +1106,7 @@ function AdminApp({ db, onLogout }) {
                   <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
                   <div>
                     <div style={{fontSize:12,fontWeight:500,color:active?"#E2DDD6":"#888"}}>{c.nom}</div>
-                    <div style={{fontSize:10,color:"#444"}}>{c.age?`${c.age} ans`:"—"}</div>
+                    <div style={{fontSize:10,color:"#444"}}>Client</div>
                   </div>
                 </div>
               </div>
@@ -1136,7 +1147,7 @@ function AdminApp({ db, onLogout }) {
                         <div style={{width:34,height:34,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color:col}}>{initials(c.nom)}</div>
                         <div>
                           <div style={{fontSize:14,fontWeight:500}}>{c.nom}</div>
-                          <div style={{fontSize:10,color:"#555"}}>{c.age?`${c.age} ans`:"—"}</div>
+                          <div style={{fontSize:10,color:"#555"}}>Client</div>
                         </div>
                       </div>
                       <div className="tag" style={{background:st.bg,color:st.text}}><div style={{width:4,height:4,borderRadius:"50%",background:st.dot,marginRight:5}}/>{c.statut}</div>
@@ -1160,7 +1171,7 @@ function AdminApp({ db, onLogout }) {
                   <div style={{width:38,height:38,borderRadius:"50%",background:`${color}18`,border:`2px solid ${color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color}}>{initials(activeClient.nom)}</div>
                   <div>
                     <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20}}>{activeClient.nom}</div>
-                    <div style={{fontSize:10,color:"#555"}}>{activeClient.age?`${activeClient.age} ans`:""}{activeClient.date_debut?` · Suivi depuis ${activeClient.date_debut}`:""}</div>
+                    <div style={{fontSize:10,color:"#555"}}>{activeClient.date_debut?` · Suivi depuis ${activeClient.date_debut}`:""}</div>
                   </div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -1171,7 +1182,7 @@ function AdminApp({ db, onLogout }) {
               </div>
 
               <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
-                {[["identification","Identification"],["synthese","Synthèse"],["objectifs","Objectifs"],["evolution","Évolution"],["bourse","Bourse"],["dividendes","Dividendes"],["budget","Budget"],["notes","Notes"]].map(([k,l])=>(
+                {ALL_TABS.filter(k => !activeClient.onglets_actifs || activeClient.onglets_actifs.includes(k)).map(k => [k, TAB_LABELS[k]]).map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
                     style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
                     {l}
@@ -1347,7 +1358,33 @@ function AdminApp({ db, onLogout }) {
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
-            {(modal.type==="client_new"||modal.type==="client_edit")&&<>{inp("nom","Nom complet *","text","Sophie Martin")}{inp("age","Âge","number","32")}{inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}{inp("mensualite","Mensualité (€)","number","800")}{inp("date_debut","Suivi depuis","text","Jan 2024")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Statut</div><select value={form.statut||"En bonne voie"} onChange={e=>f("statut",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{STATUTS.map(s=><option key={s}>{s}</option>)}</select></div></>}
+            {(modal.type==="client_new"||modal.type==="client_edit")&&<>
+  {inp("nom","Nom complet *","text","Sophie Martin")}
+  {inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}
+  {inp("date_debut","Suivi depuis","text","Jan 2024")}
+  <div style={{marginBottom:14}}>
+    <div style={{fontSize:10,color:"#555",marginBottom:5}}>Statut</div>
+    <select value={form.statut||"En bonne voie"} onChange={e=>f("statut",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{STATUTS.map(s=><option key={s}>{s}</option>)}</select>
+  </div>
+  <div style={{marginBottom:20}}>
+    <div style={{fontSize:10,color:"#555",marginBottom:8}}>Onglets accessibles</div>
+    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+      {ALL_TABS.map(tab=>{
+        const active=(form.onglets_actifs||ALL_TABS).includes(tab);
+        return(
+          <div key={tab} onClick={()=>{
+            const cur=form.onglets_actifs||ALL_TABS;
+            const next=active?cur.filter(t=>t!==tab):[...cur,tab];
+            f("onglets_actifs",next);
+          }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?"#1A2F1F":"#141416",border:`1px solid ${active?"#5EBF7A30":"#1A1A1E"}`,borderRadius:8,cursor:"pointer"}}>
+            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:`1.5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
+            <span style={{fontSize:12,color:active?"#E2DDD6":"#777"}}>{TAB_LABELS[tab]}</span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</>}}
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
             {modal.type==="objectif_new"&&<>{inp("nom","Nom *","text","Retraite anticipée")}{inp("montant_cible","Montant cible (€) *","number","300000")}{inp("description","Description","text","Partir à 55 ans")}</>}
@@ -1511,7 +1548,7 @@ function ClientApp({ db, userId, onLogout }) {
 
       {/* Tabs */}
       <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
-        {[["identification","Mon profil"],["synthese","Mon patrimoine"],["objectifs","Mes objectifs"],["evolution","Mon évolution"],["bourse","Ma bourse"],["dividendes","Mes dividendes"],["budget","Mon budget"]].map(([k,l])=>(
+        {ALL_TABS.filter(k => !client.onglets_actifs || client.onglets_actifs.includes(k)).map(k => [k, CLIENT_TAB_LABELS[k]]).map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
             style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
             {l}
