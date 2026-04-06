@@ -406,10 +406,20 @@ function BourseSection({ db, clientId, isReadOnly }) {
     const q = {};
     await Promise.all(acts.map(async (a) => {
       try {
-        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${a.ticker}&token=${FINNHUB_KEY}`);
-        const d = await r.json();
-        if (d.c) q[a.ticker] = { price: d.c, change: d.dp, prev: d.pc };
-      } catch(e) { console.error(e); }
+        const ticker = encodeURIComponent(a.ticker);
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+        const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const r = await fetch(proxy);
+        const raw = await r.json();
+        const data = JSON.parse(raw.contents);
+        const meta = data?.chart?.result?.[0]?.meta;
+        if (meta?.regularMarketPrice) {
+          const price = meta.regularMarketPrice;
+          const prev = meta.chartPreviousClose || meta.previousClose || price;
+          const change = prev > 0 ? ((price - prev) / prev * 100) : 0;
+          q[a.ticker] = { price, change, prev };
+        }
+      } catch(e) { console.error("Quote error for", a.ticker, e); }
     }));
     setQuotes(q);
     setLoadingQuotes(false);
