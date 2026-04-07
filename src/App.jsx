@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 
@@ -83,9 +83,9 @@ const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
-const ALL_TABS = ["identification","synthese","objectifs","evolution","bourse","dividendes","budget","notes"];
-const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", evolution:"Évolution", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
-const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", evolution:"Mon évolution", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
+const ALL_TABS = ["identification","synthese","objectifs","evolution","simulateur","bourse","dividendes","budget","notes"];
+const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", evolution:"Évolution", simulateur:"Simulateur", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
+const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", evolution:"Mon évolution", simulateur:"Simulateur", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
 
 function getAge(dateNaissance) {
   if (!dateNaissance) return null;
@@ -992,6 +992,228 @@ function DividendesSection({ db, clientId, isReadOnly }) {
 }
 
 // ══════════════════════════════════════
+//  SIMULATEUR DE PROJECTION
+// ══════════════════════════════════════
+function SimulateurSection({ patrimoineActuel }) {
+  const [params, setParams] = useState({
+    capital: patrimoineActuel || 0,
+    epargne: 500,
+    duree: 20,
+    taux_pessimiste: 3,
+    taux_realiste: 6,
+    taux_optimiste: 9,
+    epargne_supplementaire: 200,
+  });
+  const [afficherSupp, setAfficherSupp] = useState(true);
+
+  const p = (k, v) => setParams(prev => ({ ...prev, [k]: parseFloat(v) || 0 }));
+  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
+  const fmtK = n => {
+    if (n >= 1000000) return `${(n/1000000).toFixed(2)}M€`;
+    if (n >= 1000) return `${(n/1000).toFixed(0)}k€`;
+    return fmt(n);
+  };
+
+  // Calcul projection mensuelle
+  function calcProjection(capital, epargne, tauxAnnuel, dureeAns) {
+    const tauxMensuel = tauxAnnuel / 100 / 12;
+    const mois = dureeAns * 12;
+    const data = [];
+    let valeur = capital;
+    for (let i = 0; i <= mois; i++) {
+      if (i % 12 === 0) {
+        data.push({ annee: i / 12, valeur: Math.round(valeur) });
+      }
+      valeur = valeur * (1 + tauxMensuel) + epargne;
+    }
+    return data;
+  }
+
+  const projPessimiste = calcProjection(params.capital, params.epargne, params.taux_pessimiste, params.duree);
+  const projRealiste = calcProjection(params.capital, params.epargne, params.taux_realiste, params.duree);
+  const projOptimiste = calcProjection(params.capital, params.epargne, params.taux_optimiste, params.duree);
+  const projSuppPessimiste = calcProjection(params.capital, params.epargne + params.epargne_supplementaire, params.taux_pessimiste, params.duree);
+  const projSuppRealiste = calcProjection(params.capital, params.epargne + params.epargne_supplementaire, params.taux_realiste, params.duree);
+  const projSuppOptimiste = calcProjection(params.capital, params.epargne + params.epargne_supplementaire, params.taux_optimiste, params.duree);
+
+  const finalPessimiste = projPessimiste[projPessimiste.length - 1]?.valeur || 0;
+  const finalRealiste = projRealiste[projRealiste.length - 1]?.valeur || 0;
+  const finalOptimiste = projOptimiste[projOptimiste.length - 1]?.valeur || 0;
+  const finalSuppRealiste = projSuppRealiste[projSuppRealiste.length - 1]?.valeur || 0;
+  const gainSupp = finalSuppRealiste - finalRealiste;
+
+  // Merge data for chart
+  const chartData = projRealiste.map((r, i) => ({
+    annee: `${r.annee} ans`,
+    pessimiste: projPessimiste[i]?.valeur,
+    realiste: r.valeur,
+    optimiste: projOptimiste[i]?.valeur,
+    ...(afficherSupp ? {
+      supp_pessimiste: projSuppPessimiste[i]?.valeur,
+      supp_realiste: projSuppRealiste[i]?.valeur,
+      supp_optimiste: projSuppOptimiste[i]?.valeur,
+    } : {})
+  }));
+
+  const inpStyle = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 13, fontFamily: "inherit" };
+  const labelStyle = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 };
+
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Simulateur de projection</div>
+
+      {/* Paramètres */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Paramètres</div>
+        <div className="grid-3" style={{ marginBottom: 16 }}>
+          <div>
+            <div style={labelStyle}>Capital de départ (€)</div>
+            <input type="number" value={params.capital} onChange={e => p("capital", e.target.value)} style={inpStyle} />
+          </div>
+          <div>
+            <div style={labelStyle}>Épargne mensuelle (€)</div>
+            <input type="number" value={params.epargne} onChange={e => p("epargne", e.target.value)} style={inpStyle} />
+          </div>
+          <div>
+            <div style={labelStyle}>Durée (années)</div>
+            <input type="number" value={params.duree} onChange={e => p("duree", e.target.value)} style={inpStyle} />
+          </div>
+        </div>
+        <div className="grid-3" style={{ marginBottom: 16 }}>
+          <div>
+            <div style={{ ...labelStyle, color: "#E07A7A" }}>Taux pessimiste (%/an)</div>
+            <input type="number" step="0.5" value={params.taux_pessimiste} onChange={e => p("taux_pessimiste", e.target.value)} style={{ ...inpStyle, borderColor: "#E07A7A30" }} />
+          </div>
+          <div>
+            <div style={{ ...labelStyle, color: "#C9A96E" }}>Taux réaliste (%/an)</div>
+            <input type="number" step="0.5" value={params.taux_realiste} onChange={e => p("taux_realiste", e.target.value)} style={{ ...inpStyle, borderColor: "#C9A96E30" }} />
+          </div>
+          <div>
+            <div style={{ ...labelStyle, color: "#5EBF7A" }}>Taux optimiste (%/an)</div>
+            <input type="number" step="0.5" value={params.taux_optimiste} onChange={e => p("taux_optimiste", e.target.value)} style={{ ...inpStyle, borderColor: "#5EBF7A30" }} />
+          </div>
+        </div>
+
+        {/* Épargne supplémentaire */}
+        <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <div onClick={() => setAfficherSupp(!afficherSupp)}
+              style={{ width: 32, height: 18, borderRadius: 9, background: afficherSupp ? "#C9A96E" : "#222", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: "#fff", position: "absolute", top: 2, left: afficherSupp ? 16 : 2, transition: "left 0.2s" }} />
+            </div>
+            <span style={{ fontSize: 12, color: afficherSupp ? "#E2DDD6" : "#555" }}>Comparer avec épargne supplémentaire</span>
+          </div>
+          {afficherSupp && (
+            <div style={{ maxWidth: 220 }}>
+              <div style={{ ...labelStyle, color: "#8B7BAB" }}>Épargne supplémentaire (€/mois)</div>
+              <input type="number" value={params.epargne_supplementaire} onChange={e => p("epargne_supplementaire", e.target.value)}
+                style={{ ...inpStyle, borderColor: "#8B7BAB30" }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* KPIs résultats */}
+      <div className="grid-3" style={{ marginBottom: 20 }}>
+        {[
+          { label: `Scénario pessimiste (${params.taux_pessimiste}%)`, val: fmtK(finalPessimiste), color: "#E07A7A", bg: "#2F1010" },
+          { label: `Scénario réaliste (${params.taux_realiste}%)`, val: fmtK(finalRealiste), color: "#C9A96E", bg: "#1A1712" },
+          { label: `Scénario optimiste (${params.taux_optimiste}%)`, val: fmtK(finalOptimiste), color: "#5EBF7A", bg: "#1A2F1F" },
+        ].map((k, i) => (
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: k.color, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{k.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: k.color }}>
+              {k.val}
+            </div>
+            <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>dans {params.duree} ans</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Gain épargne supplémentaire */}
+      {afficherSupp && (
+        <div style={{ background: "#1A1A2F", border: "1px solid #8B7BAB30", borderRadius: 10, padding: "14px 20px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 10, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>
+              Gain avec +{fmt(params.epargne_supplementaire)}/mois supplémentaires (scénario réaliste)
+            </div>
+            <div style={{ fontSize: 11, color: "#555" }}>
+              {fmt(params.epargne + params.epargne_supplementaire)}/mois → {fmtK(finalSuppRealiste)} dans {params.duree} ans
+            </div>
+          </div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#8B7BAB" }}>+{fmtK(gainSupp)}</div>
+        </div>
+      )}
+
+      {/* Graphique */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>Courbes de projection</div>
+        <ResponsiveContainer width="100%" height={320}>
+          <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
+            <XAxis dataKey="annee" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmtK(v)} width={70} />
+            <Tooltip formatter={(v, name) => {
+              const labels = { pessimiste: "Pessimiste", realiste: "Réaliste", optimiste: "Optimiste", supp_pessimiste: "Pessimiste +épargne", supp_realiste: "Réaliste +épargne", supp_optimiste: "Optimiste +épargne" };
+              return [fmtK(v), labels[name] || name];
+            }} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+            <Line type="monotone" dataKey="pessimiste" stroke="#E07A7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+            <Line type="monotone" dataKey="realiste" stroke="#C9A96E" strokeWidth={2.5} dot={false} />
+            <Line type="monotone" dataKey="optimiste" stroke="#5EBF7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+            {afficherSupp && <>
+              <Line type="monotone" dataKey="supp_pessimiste" stroke="#E07A7A" strokeWidth={1.5} dot={false} strokeDasharray="2 4" opacity={0.5} />
+              <Line type="monotone" dataKey="supp_realiste" stroke="#8B7BAB" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="supp_optimiste" stroke="#5EBF7A" strokeWidth={1.5} dot={false} strokeDasharray="2 4" opacity={0.5} />
+            </>}
+          </LineChart>
+        </ResponsiveContainer>
+
+        {/* Légende */}
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12, justifyContent: "center" }}>
+          {[
+            { color: "#E07A7A", label: `Pessimiste (${params.taux_pessimiste}%)`, dash: true },
+            { color: "#C9A96E", label: `Réaliste (${params.taux_realiste}%)` },
+            { color: "#5EBF7A", label: `Optimiste (${params.taux_optimiste}%)`, dash: true },
+            ...(afficherSupp ? [{ color: "#8B7BAB", label: `Réaliste +${fmt(params.epargne_supplementaire)}/mois` }] : []),
+          ].map((l, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 20, height: 2, background: l.color, opacity: l.dash ? 0.7 : 1 }} />
+              <span style={{ fontSize: 10, color: "#666" }}>{l.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tableau récapitulatif */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid #1A1A1E", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Tableau de projection détaillé</div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
+                {["Année", `Pessimiste (${params.taux_pessimiste}%)`, `Réaliste (${params.taux_realiste}%)`, `Optimiste (${params.taux_optimiste}%)`, ...(afficherSupp ? [`Réaliste +${fmt(params.epargne_supplementaire)}/mois`] : [])].map((h, i) => (
+                  <th key={i} style={{ padding: "10px 16px", textAlign: i === 0 ? "left" : "right", fontSize: 9, color: ["#888","#E07A7A","#C9A96E","#5EBF7A","#8B7BAB"][i], textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {projRealiste.filter((_, i) => i % 5 === 0 || i === projRealiste.length - 1).map((r, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid #1A1A1E", background: i % 2 === 0 ? "transparent" : "#0A0A0C" }}>
+                  <td style={{ padding: "9px 16px", color: "#888", fontWeight: 500 }}>{r.annee === 0 ? "Aujourd'hui" : `${r.annee} ans`}</td>
+                  <td style={{ padding: "9px 16px", textAlign: "right", color: "#E07A7A" }}>{fmtK(projPessimiste[projPessimiste.findIndex(x => x.annee === r.annee)]?.valeur)}</td>
+                  <td style={{ padding: "9px 16px", textAlign: "right", color: "#C9A96E", fontWeight: 500 }}>{fmtK(r.valeur)}</td>
+                  <td style={{ padding: "9px 16px", textAlign: "right", color: "#5EBF7A" }}>{fmtK(projOptimiste[projOptimiste.findIndex(x => x.annee === r.annee)]?.valeur)}</td>
+                  {afficherSupp && <td style={{ padding: "9px 16px", textAlign: "right", color: "#8B7BAB", fontWeight: 500 }}>{fmtK(projSuppRealiste[projSuppRealiste.findIndex(x => x.annee === r.annee)]?.valeur)}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
 function AdminApp({ db, onLogout }) {
@@ -1364,6 +1586,7 @@ function AdminApp({ db, onLogout }) {
                 )}
 
                 {tab==="budget"&&<BudgetSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
+                {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineActuel}/>}
                 {tab==="bourse"&&<BourseSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="dividendes"&&<DividendesSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="identification"&&<IdentificationSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
@@ -1712,6 +1935,7 @@ function ClientApp({ db, userId, onLogout }) {
         )}
 
         {tab==="budget"&&<BudgetSection db={db} clientId={client.id} isReadOnly={false}/>}
+        {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineTotal}/>}
         {tab==="bourse"&&<BourseSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="dividendes"&&<DividendesSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
