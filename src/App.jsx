@@ -83,9 +83,9 @@ const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
-const ALL_TABS = ["identification","synthese","objectifs","evolution","simulateur","immo_locatif","louer_acheter","impots","bourse","dividendes","budget","notes"];
-const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", evolution:"Évolution", simulateur:"Simulateur", immo_locatif:"Immo locatif", louer_acheter:"Louer vs Acheter", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
-const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", evolution:"Mon évolution", simulateur:"Simulateur", immo_locatif:"Immo locatif", louer_acheter:"Louer vs Acheter", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
+const ALL_TABS = ["identification","synthese","objectifs","simulateur","immobilier","impots","bourse","dividendes","budget","notes"];
+const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
+const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
 
 function getAge(dateNaissance) {
   if (!dateNaissance) return null;
@@ -815,6 +815,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
   const [saving, setSaving] = useState(false);
+  const [sortBy, setSortBy] = useState("nom"); // "nom" | "total" | "annee_asc" | "annee_desc"
+  const [filterText, setFilterText] = useState("");
   const CURRENT_YEAR = new Date().getFullYear();
 
   useEffect(() => { if (clientId) loadDividendes(); }, [clientId]);
@@ -880,6 +882,17 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   // Chart data - par année croissant
   const chartData = [...annees].reverse().map(a => ({ annee: String(a), total: totalParAnnee[a] }));
 
+  // Sorted/filtered entreprises for table
+  const entreprisesFiltrees = entreprises
+    .filter(e => filterText === "" || e.toLowerCase().includes(filterText.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === "nom") return a.localeCompare(b);
+      if (sortBy === "total_desc") return totalParEntreprise[b] - totalParEntreprise[a];
+      if (sortBy === "total_asc") return totalParEntreprise[a] - totalParEntreprise[b];
+      if (sortBy === "annee_desc") return (totalParAnnee[annees[0]]||0) > 0 ? (matrix[b][annees[0]]||0) - (matrix[a][annees[0]]||0) : 0;
+      return a.localeCompare(b);
+    });
+
   return (
     <div>
       {/* KPIs */}
@@ -893,8 +906,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalGlobal)}</div>
         </div>
         <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Entreprises</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{entreprises.length}</div>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Versements saisis</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{dividendes.length}</div>
         </div>
       </div>
 
@@ -915,11 +928,22 @@ function DividendesSection({ db, clientId, isReadOnly }) {
 
       {/* Tableau croisé entreprise x année */}
       <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid #1A1A1E", flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Récapitulatif par entreprise & année</div>
-          {!isReadOnly && (
-            <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: "#5EBF7A", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>+ Ajouter</button>
-          )}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input placeholder="🔍 Filtrer..." value={filterText} onChange={e => setFilterText(e.target.value)}
+              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit", width: 130 }} />
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit" }}>
+              <option value="nom">Trier : A→Z</option>
+              <option value="total_desc">Total décroissant</option>
+              <option value="total_asc">Total croissant</option>
+              <option value="annee_desc">Année en cours ↓</option>
+            </select>
+            {!isReadOnly && (
+              <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: "#5EBF7A", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>+ Ajouter</button>
+            )}
+          </div>
         </div>
 
         {entreprises.length === 0 ? (
@@ -937,7 +961,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                 </tr>
               </thead>
               <tbody>
-                {entreprises.map((e, ei) => (
+                {entreprisesFiltrees.map((e, ei) => (
                   <tr key={e} style={{ borderBottom: "1px solid #1A1A1E", background: ei % 2 === 0 ? "transparent" : "#0A0A0C" }}>
                     <td style={{ padding: "10px 20px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
                     {annees.map(a => (
@@ -1522,13 +1546,13 @@ function ImpotsSection() {
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtPct = n => `${parseFloat(n).toFixed(1)}%`;
 
-  // Barème 2024
+  // Barème 2025
   const BAREME = [
-    { min: 0, max: 11294, taux: 0 },
-    { min: 11294, max: 28797, taux: 0.11 },
-    { min: 28797, max: 82341, taux: 0.30 },
-    { min: 82341, max: 177106, taux: 0.41 },
-    { min: 177106, max: Infinity, taux: 0.45 },
+    { min: 0, max: 11497, taux: 0 },
+    { min: 11497, max: 29315, taux: 0.11 },
+    { min: 29315, max: 83823, taux: 0.30 },
+    { min: 83823, max: 180294, taux: 0.41 },
+    { min: 180294, max: Infinity, taux: 0.45 },
   ];
 
   function calcImpot(revenu_imposable, parts) {
@@ -1542,34 +1566,37 @@ function ImpotsSection() {
     return impot_part * parts;
   }
 
-  // Calcul revenu brut global
-  const salaire_brut_fiscal = p.salaire_net / 0.78; // approximation net → brut fiscal
+  // Calcul direct depuis salaire NET imposable (sans passer par le brut)
+  // Le salaire net fiscal = salaire net après déduction des frais professionnels
   const deduction_frais = p.regime_frais === "forfait"
-    ? Math.min(salaire_brut_fiscal * 0.10, 14171)
+    ? Math.min(p.salaire_net * 0.10, 14426) // plafond 2025
     : p.frais_reels;
-  const salaire_imposable = salaire_brut_fiscal - deduction_frais;
+  const salaire_net_imposable = Math.max(0, p.salaire_net - deduction_frais);
 
-  const revenu_brut_global = salaire_imposable + p.revenus_fonciers + p.revenus_capitaux * 0.6 + p.autres_revenus - p.pension_alimentaire_versee;
+  const revenu_brut_global = salaire_net_imposable + p.revenus_fonciers + p.revenus_capitaux * 0.6 + p.autres_revenus - p.pension_alimentaire_versee;
 
-  // Charges déductibles
+  // Déductions (charges déductibles du revenu imposable)
   const deductions = p.per_versements + p.compte_epargne_retraite;
   const revenu_net_imposable = Math.max(0, revenu_brut_global - deductions);
 
-  // Calcul impôt
+  // Calcul impôt progressif
   const impot_brut = calcImpot(revenu_net_imposable, p.parts);
 
-  // Réductions
+  // Réductions d'impôt
   const reduction_dons = Math.min(p.dons * 0.66, revenu_net_imposable * 0.20);
-  const reduction_pinel = p.investissement_pinel * 0.12; // taux Pinel 2024
+  const reduction_pinel = p.investissement_pinel * 0.12;
   const reduction_sofica = p.sofica * 0.36;
   const total_reductions = reduction_dons + reduction_pinel + reduction_sofica;
 
   const impot_net = Math.max(0, impot_brut - total_reductions);
   const taux_moyen = revenu_net_imposable > 0 ? (impot_net / revenu_net_imposable) * 100 : 0;
+  // Taux à la source = taux moyen arrondi (utilisé par l'administration fiscale)
+  const taux_source = Math.round(taux_moyen * 10) / 10;
 
   // TMI
   const qi_final = revenu_net_imposable / p.parts;
-  const tmi = BAREME.findLast(t => qi_final > t.min)?.taux * 100 || 0;
+  const tmi_tranche = BAREME.reduce((acc, t) => qi_final > t.min ? t : acc, BAREME[0]);
+  const tmi = tmi_tranche.taux * 100;
 
   const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" };
   const labS = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
@@ -1590,13 +1617,14 @@ function ImpotsSection() {
   return (
     <div>
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 6 }}>Estimation impôt sur le revenu</div>
-      <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>⚠️ Estimation indicative — barème 2024. Consultez un expert-comptable pour votre situation exacte.</div>
+      <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>⚠️ Estimation indicative — barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
 
       {/* KPIs */}
-      <div className="grid-3" style={{ marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
         {[
           { label: "Impôt estimé", val: fmt(impot_net), color: "#E07A7A", bg: "#2F1010" },
           { label: "Taux moyen d'imposition", val: fmtPct(taux_moyen), color: "#C9A96E", bg: "#1A1712" },
+          { label: "Taux prélèvement à la source", val: fmtPct(taux_source), color: "#7C9B8A", bg: "#0F1A12" },
           { label: "Tranche marginale (TMI)", val: fmtPct(tmi), color: "#8B7BAB", bg: "#1A1A2F" },
         ].map((k,i) => (
           <div key={i} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
@@ -1677,7 +1705,7 @@ function ImpotsSection() {
 
           {/* Récap calcul */}
           <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 14 }}>
-            <Row label="Revenu brut global" val={fmt(revenu_brut_global)} />
+            <Row label="Revenu net imposable (base)" val={fmt(revenu_brut_global)} />
             <Row label="Déductions (PER, retraite...)" val={`- ${fmt(deductions)}`} color="#5EBF7A" />
             <Row label="Revenu net imposable" val={fmt(revenu_net_imposable)} color="#E2DDD6" bold />
             <Row label="Impôt brut" val={fmt(impot_brut)} color="#E07A7A" />
@@ -1689,7 +1717,7 @@ function ImpotsSection() {
 
       {/* Barème visuel */}
       <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2024 — votre position</div>
+        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2025 — votre position</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {BAREME.map((t, i) => (
             <div key={i} style={{
@@ -1710,6 +1738,399 @@ function ImpotsSection() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  SYNTHESE + EVOLUTION (sous-onglets)
+// ══════════════════════════════════════
+function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin }) {
+  const [subTab, setSubTab] = useState("synthese");
+  const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobilier": "#8B7BAB", "Autre": "#888" };
+
+  return (
+    <div>
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
+        {[["synthese", "Synthèse"], ["evolution", "Évolution"]].map(([k, l]) => (
+          <button key={k} onClick={() => setSubTab(k)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "synthese" && (
+        <div>
+          <div className="grid-3" style={{ marginBottom: 20 }}>
+            {[
+              { label: "Patrimoine total", val: fmt(patrimoineActuel) },
+              { label: "Patrimoine cible", val: fmt(activeClient?.patrimoine_cible) },
+              { label: "Produits", val: produits.length },
+            ].map((k, i) => (
+              <div key={i} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
+                <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24 }}>{k.val}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid-split" style={{ marginBottom: 16 }}>
+            {/* Pie */}
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Répartition</div>
+              {parCategorie.length > 0 ? <>
+                <ResponsiveContainer width="100%" height={140}>
+                  <PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie>
+                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {parCategorie.map((c, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 6, height: 6, borderRadius: "50%", background: c.color }} /><span style={{ fontSize: 11, color: "#777" }}>{c.name}</span></div>
+                    <span style={{ fontSize: 11, color: "#999" }}>{fmt(c.value)}</span>
+                  </div>
+                ))}
+              </> : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 20 }}>Aucun produit</div>}
+            </div>
+
+            {/* Produits */}
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Produits</div>
+                <button onClick={onAddProduit} style={{ padding: "5px 12px", background: color, border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>
+              </div>
+              {produits.length === 0 && <div style={{ color: "#444", fontSize: 12 }}>Aucun produit</div>}
+              {["Épargne","Investissement","Immobilier","Autre"].map(cat => {
+                const prods = produits.filter(p => p.categorie === cat);
+                if (!prods.length) return null;
+                return (
+                  <div key={cat} style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 9, color: CAT_COLORS[cat], textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{cat}</div>
+                    {prods.map(p => {
+                      const last = avoirs.filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                      return (
+                        <div key={p.id} className="row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", background: "#141416", borderRadius: 8, marginBottom: 3, transition: "background 0.15s" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: "50%", background: CAT_COLORS[cat] }} />
+                            <span style={{ fontSize: 12, color: "#CCC" }}>{p.nom}</span>
+                            {last && <span style={{ fontSize: 10, color: "#555" }}>· {fmtDate(last.date)}</span>}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500 }}>{last ? fmt(last.montant) : "—"}</span>
+                            <button onClick={() => onAddAvoir(p)} style={{ padding: "3px 8px", background: `${color}20`, border: `1px solid ${color}40`, borderRadius: 5, cursor: "pointer", color, fontSize: 10 }}>+ Avoir</button>
+                            <button onClick={() => onDelProduit(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#E07A7A", fontSize: 11 }}>✕</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {subTab === "evolution" && (
+        <div>
+          {timeline.length < 2
+            ? <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 28, color: "#555", fontSize: 13, textAlign: "center" }}>Ajoute des avoirs à différentes dates pour voir l'évolution</div>
+            : <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 24, marginBottom: 16 }}>
+                <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 18 }}>Patrimoine total</div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={timeline}>
+                    <defs><linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.25} /><stop offset="95%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
+                    <XAxis dataKey="date" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                    <Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad2)" dot={{ fill: color, r: 3 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+          }
+          {produits.length > 0 && (
+            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 24 }}>
+              <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Par produit</div>
+              {produits.map((p, pi) => {
+                const pA = avoirs.filter(a => a.produit_id === p.id).sort((a, b) => new Date(a.date) - new Date(b.date));
+                if (!pA.length) return null;
+                const pc = ["#C9A96E","#7C9B8A","#8B7BAB","#E07A7A","#6AAED4","#E0A03A"][pi % 6];
+                return (
+                  <div key={p.id} style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: pc }} />
+                      <span style={{ fontSize: 11, color: "#888" }}>{p.nom}</span>
+                      <span style={{ padding: "2px 8px", background: `${CAT_COLORS[p.categorie]}15`, borderRadius: 20, fontSize: 10, color: CAT_COLORS[p.categorie] }}>{p.categorie}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {pA.map((a, ai) => (
+                        <div key={ai} style={{ padding: "6px 12px", background: "#141416", borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>{fmtDate(a.date)}</div>
+                          <div style={{ fontSize: 12, color: pc, fontWeight: 500 }}>{fmt(a.montant)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  IMMOBILIER (onglet principal avec sous-sections)
+// ══════════════════════════════════════
+function ImmobilierSection({ db, clientId, isReadOnly }) {
+  const [subTab, setSubTab] = useState("biens");
+  const color = "#8B7BAB";
+
+  return (
+    <div>
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
+        {[["biens","Mes biens"], ["locatif","Rentabilité locative"], ["louer_acheter","Louer vs Acheter"]].map(([k, l]) => (
+          <button key={k} onClick={() => setSubTab(k)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {subTab === "biens" && <BiensImmobiliersSection db={db} clientId={clientId} isReadOnly={isReadOnly} />}
+      {subTab === "locatif" && <ImmoLocatifSection />}
+      {subTab === "louer_acheter" && <LouerAcheterSection />}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  BIENS IMMOBILIERS (suivi patrimoine)
+// ══════════════════════════════════════
+function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
+  const [biens, setBiens] = useState([]);
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const TYPES = ["Résidence principale", "Résidence secondaire", "Locatif", "Terrain", "Parking", "Autre"];
+  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
+  const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
+
+  useEffect(() => { if (clientId) loadBiens(); }, [clientId]);
+
+  async function loadBiens() {
+    try {
+      const b = await db.get("biens_immobiliers", `select=*&client_id=eq.${clientId}&order=date_achat`);
+      setBiens(b);
+    } catch(e) { console.error(e); }
+  }
+
+  async function saveBien() {
+    setSaving(true);
+    try {
+      const { id, client_id, ...payload } = form;
+      const cleanPayload = {
+        ...payload,
+        client_id: clientId,
+        prix_achat: parseFloat(form.prix_achat) || 0,
+        valorisation_actuelle: parseFloat(form.valorisation_actuelle) || 0,
+        capital_restant_du: parseFloat(form.capital_restant_du) || 0,
+        mensualite_credit: parseFloat(form.mensualite_credit) || 0,
+        taux_credit: parseFloat(form.taux_credit) || 0,
+        loyer_mensuel: parseFloat(form.loyer_mensuel) || 0,
+        charges_annuelles: parseFloat(form.charges_annuelles) || 0,
+      };
+      if (modal === "edit" && form.id) {
+        await db.patch("biens_immobiliers", form.id, cleanPayload);
+      } else {
+        await db.post("biens_immobiliers", cleanPayload);
+      }
+      await loadBiens();
+      setModal(null);
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  async function delBien(id) {
+    if (!window.confirm("Supprimer ce bien ?")) return;
+    try { await db.del("biens_immobiliers", id); await loadBiens(); } catch(e) { alert(e.message); }
+  }
+
+  const totalPatrimoine = biens.reduce((s, b) => s + (b.valorisation_actuelle || b.prix_achat || 0), 0);
+  const totalDette = biens.reduce((s, b) => s + (b.capital_restant_du || 0), 0);
+  const patrimoineNet = totalPatrimoine - totalDette;
+  const plusValues = biens.reduce((s, b) => s + ((b.valorisation_actuelle || 0) - (b.prix_achat || 0)), 0);
+
+  const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 12 };
+  const labS = { fontSize: 10, color: "#555", marginBottom: 4 };
+
+  return (
+    <div>
+      {/* KPIs */}
+      <div className="grid-3" style={{ marginBottom: 20 }}>
+        {[
+          { label: "Valeur totale des biens", val: fmt(totalPatrimoine), color: "#E2DDD6", bg: "#0F0F11" },
+          { label: "Dettes immobilières", val: fmt(totalDette), color: "#E07A7A", bg: "#2F1010" },
+          { label: "Patrimoine immobilier net", val: fmt(patrimoineNet), color: "#5EBF7A", bg: "#1A2F1F" },
+        ].map((k, i) => (
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color+"25"}`, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Liste biens */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Biens immobiliers ({biens.length})</div>
+          {!isReadOnly && (
+            <button onClick={() => { setForm({ type_bien: "Résidence principale" }); setModal("new"); }}
+              style={{ padding: "5px 14px", background: "#8B7BAB", border: "none", borderRadius: 6, cursor: "pointer", color: "#fff", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>
+              + Ajouter un bien
+            </button>
+          )}
+        </div>
+
+        {biens.length === 0 && (
+          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun bien immobilier enregistré.</div>
+        )}
+
+        {biens.map((b, i) => {
+          const valeur = b.valorisation_actuelle || b.prix_achat || 0;
+          const pv = valeur - (b.prix_achat || 0);
+          const pvPct = b.prix_achat > 0 ? (pv / b.prix_achat * 100) : 0;
+          const patrimoineNetBien = valeur - (b.capital_restant_du || 0);
+          return (
+            <div key={b.id} style={{ borderBottom: "1px solid #1A1A1E", padding: "18px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "#E2DDD6", marginBottom: 3 }}>{b.nom}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ padding: "2px 8px", background: "#8B7BAB20", border: "1px solid #8B7BAB30", borderRadius: 20, fontSize: 10, color: "#8B7BAB" }}>{b.type_bien}</span>
+                    {b.adresse && <span style={{ fontSize: 10, color: "#555" }}>📍 {b.adresse}</span>}
+                    {b.date_achat && <span style={{ fontSize: 10, color: "#555" }}>🗓 Achat : {fmtDate(b.date_achat)}</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {!isReadOnly && <>
+                    <button onClick={() => { setForm({ ...b }); setModal("edit"); }}
+                      style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10, fontFamily: "inherit" }}>Modifier</button>
+                    <button onClick={() => delBien(b.id)}
+                      style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#E07A7A", fontSize: 10, fontFamily: "inherit" }}>✕</button>
+                  </>}
+                </div>
+              </div>
+
+              <div className="grid-3">
+                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Prix d'achat</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#E2DDD6" }}>{fmt(b.prix_achat)}</div>
+                </div>
+                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Valorisation actuelle</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#E2DDD6" }}>{fmt(valeur)}</div>
+                  <div style={{ fontSize: 10, color: pv >= 0 ? "#5EBF7A" : "#E07A7A", marginTop: 2 }}>{pv >= 0 ? "+" : ""}{fmt(pv)} ({pvPct.toFixed(1)}%)</div>
+                </div>
+                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Patrimoine net</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#5EBF7A" }}>{fmt(patrimoineNetBien)}</div>
+                  {b.capital_restant_du > 0 && <div style={{ fontSize: 10, color: "#E07A7A", marginTop: 2 }}>Dette : {fmt(b.capital_restant_du)}</div>}
+                </div>
+              </div>
+
+              {(b.capital_restant_du > 0 || b.loyer_mensuel > 0) && (
+                <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+                  {b.mensualite_credit > 0 && <span style={{ fontSize: 11, color: "#E07A7A", background: "#E07A7A10", padding: "4px 10px", borderRadius: 20 }}>💳 {fmt(b.mensualite_credit)}/mois · {b.taux_credit}%</span>}
+                  {b.loyer_mensuel > 0 && <span style={{ fontSize: 11, color: "#5EBF7A", background: "#5EBF7A10", padding: "4px 10px", borderRadius: 20 }}>🏠 Loyer {fmt(b.loyer_mensuel)}/mois</span>}
+                  {b.date_fin_credit && <span style={{ fontSize: 11, color: "#555", padding: "4px 10px" }}>Fin crédit : {fmtDate(b.date_fin_credit)}</span>}
+                </div>
+              )}
+              {b.notes && <div style={{ fontSize: 11, color: "#555", marginTop: 8, fontStyle: "italic" }}>{b.notes}</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal */}
+      {modal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 500, maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>{modal === "edit" ? "Modifier le bien" : "Nouveau bien immobilier"}</div>
+
+            <div style={labS}>Nom du bien *</div>
+            <input placeholder="Appartement Paris 11e, Maison Bordeaux..." defaultValue={form.nom || ""} onChange={e => f("nom", e.target.value)} style={inpS} />
+
+            <div style={labS}>Type de bien</div>
+            <select defaultValue={form.type_bien || "Résidence principale"} onChange={e => f("type_bien", e.target.value)} style={inpS}>
+              {TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+
+            <div style={labS}>Adresse</div>
+            <input placeholder="12 rue de la Paix, 75001 Paris" defaultValue={form.adresse || ""} onChange={e => f("adresse", e.target.value)} style={inpS} />
+
+            <div className="grid-2" style={{ gap: 10 }}>
+              <div>
+                <div style={labS}>Date d'achat</div>
+                <input type="date" defaultValue={form.date_achat || ""} onChange={e => f("date_achat", e.target.value)} style={inpS} />
+              </div>
+              <div>
+                <div style={labS}>Prix d'achat (€)</div>
+                <input type="number" defaultValue={form.prix_achat || ""} onChange={e => f("prix_achat", e.target.value)} style={inpS} />
+              </div>
+            </div>
+
+            <div style={labS}>Valorisation actuelle (€)</div>
+            <input type="number" defaultValue={form.valorisation_actuelle || ""} onChange={e => f("valorisation_actuelle", e.target.value)} style={inpS} />
+
+            <div style={{ fontSize: 10, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10, marginTop: 4 }}>Crédit immobilier</div>
+            <div className="grid-2" style={{ gap: 10 }}>
+              <div>
+                <div style={labS}>Capital restant dû (€)</div>
+                <input type="number" defaultValue={form.capital_restant_du || ""} onChange={e => f("capital_restant_du", e.target.value)} style={inpS} />
+              </div>
+              <div>
+                <div style={labS}>Mensualité (€)</div>
+                <input type="number" defaultValue={form.mensualite_credit || ""} onChange={e => f("mensualite_credit", e.target.value)} style={inpS} />
+              </div>
+              <div>
+                <div style={labS}>Taux (%)</div>
+                <input type="number" step="0.1" defaultValue={form.taux_credit || ""} onChange={e => f("taux_credit", e.target.value)} style={inpS} />
+              </div>
+              <div>
+                <div style={labS}>Date fin crédit</div>
+                <input type="date" defaultValue={form.date_fin_credit || ""} onChange={e => f("date_fin_credit", e.target.value)} style={inpS} />
+              </div>
+            </div>
+
+            <div style={{ fontSize: 10, color: "#7C9B8A", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10, marginTop: 4 }}>Locatif (optionnel)</div>
+            <div className="grid-2" style={{ gap: 10 }}>
+              <div>
+                <div style={labS}>Loyer mensuel (€)</div>
+                <input type="number" defaultValue={form.loyer_mensuel || ""} onChange={e => f("loyer_mensuel", e.target.value)} style={inpS} />
+              </div>
+              <div>
+                <div style={labS}>Charges annuelles (€)</div>
+                <input type="number" defaultValue={form.charges_annuelles || ""} onChange={e => f("charges_annuelles", e.target.value)} style={inpS} />
+              </div>
+            </div>
+
+            <div style={labS}>Notes</div>
+            <textarea defaultValue={form.notes || ""} onChange={e => f("notes", e.target.value)} placeholder="Informations complémentaires..."
+              style={{ ...inpS, minHeight: 60, resize: "none" }} />
+
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={saveBien} disabled={saving} style={{ flex: 1, padding: 10, background: "#8B7BAB", border: "none", borderRadius: 8, cursor: "pointer", color: "#fff", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
+              <button onClick={() => setModal(null)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1951,6 +2372,17 @@ function AdminApp({ db, onLogout }) {
               <div className="page-pad" style={{flex:1}}>
 
                 {tab==="synthese"&&(
+                  <SyntheseEvolSection
+                    produits={produits} avoirs={avoirs} parCategorie={parCategorie}
+                    patrimoineActuel={patrimoineActuel} timeline={timeline} color={color}
+                    activeClient={activeClient} fmt={fmt} fmtDate={fmtDate}
+                    onAddProduit={()=>openModal("produit_new")}
+                    onAddAvoir={(prod)=>openModal("avoir_new",{produit_id:prod.id,produit_nom:prod.nom})}
+                    onDelProduit={delProduit}
+                    isAdmin={true}
+                  />
+                )}
+                {tab==="synthese_OLD"&&(
                   <div>
                     <div className="grid-3" style={{marginBottom:20}}>
                       {[
@@ -2063,33 +2495,10 @@ function AdminApp({ db, onLogout }) {
                   </div>
                 )}
 
-                {tab==="evolution"&&(
-                  <div>
-                    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>Évolution</div>
-                    {timeline.length<2
-                      ?<div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:28,color:"#555",fontSize:13,textAlign:"center"}}>Ajoute des avoirs à différentes dates pour voir l'évolution</div>
-                      :<div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:24,marginBottom:16}}>
-                        <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:18}}>Patrimoine total</div>
-                        <ResponsiveContainer width="100%" height={240}><AreaChart data={timeline}><defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.25}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><XAxis dataKey="date" tick={{fill:"#444",fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:"#444",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11}}/><Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad)" dot={{fill:color,r:3}}/></AreaChart></ResponsiveContainer>
-                      </div>}
-                    {produits.length>0&&(
-                      <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:24}}>
-                        <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:16}}>Par produit</div>
-                        {produits.map((p,pi)=>{const pA=avoirs.filter(a=>a.produit_id===p.id).sort((a,b)=>new Date(a.date)-new Date(b.date));if(!pA.length)return null;const pc=COLORS[pi%COLORS.length];return(
-                          <div key={p.id} style={{marginBottom:16}}>
-                            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}><div style={{width:6,height:6,borderRadius:"50%",background:pc}}/><span style={{fontSize:11,color:"#888"}}>{p.nom}</span><span style={{padding:"2px 8px",background:`${CAT_COLORS[p.categorie]}15`,borderRadius:20,fontSize:10,color:CAT_COLORS[p.categorie]}}>{p.categorie}</span></div>
-                            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{pA.map((a,ai)=><div key={ai} style={{padding:"6px 12px",background:"#141416",borderRadius:8}}><div style={{fontSize:10,color:"#555",marginBottom:2}}>{fmtDate(a.date)}</div><div style={{fontSize:12,color:pc,fontWeight:500}}>{fmt(a.montant)}</div></div>)}</div>
-                          </div>
-                        );})}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {tab==="budget"&&<BudgetSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineActuel}/>}
-                {tab==="immo_locatif"&&<ImmoLocatifSection/>}
-                {tab==="louer_acheter"&&<LouerAcheterSection/>}
+                {tab==="immobilier"&&<ImmobilierSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="impots"&&<ImpotsSection/>}
                 {tab==="bourse"&&<BourseSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="dividendes"&&<DividendesSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
@@ -2321,6 +2730,17 @@ function ClientApp({ db, userId, onLogout }) {
       <div className="page-pad" style={{maxWidth:960,margin:"0 auto"}}>
 
         {tab==="synthese"&&(
+          <SyntheseEvolSection
+            produits={produits} avoirs={avoirs} parCategorie={parCategorie}
+            patrimoineActuel={patrimoineTotal} timeline={timeline} color={color}
+            activeClient={client} fmt={fmt} fmtDate={fmtDate}
+            onAddProduit={()=>openModal("produit_new")}
+            onAddAvoir={(prod)=>openModal("avoir_new",{produit_id:prod.id,produit_nom:prod.nom})}
+            onDelProduit={delProduit}
+            isAdmin={false}
+          />
+        )}
+        {tab==="synthese_OLD"&&(
           <div>
             <div className="grid-2" style={{marginBottom:20}}>
               {[{label:"Patrimoine total",val:fmt(patrimoineTotal)},{label:"Patrimoine cible",val:fmt(client.patrimoine_cible)}].map((k,i)=>(
@@ -2426,22 +2846,10 @@ function ClientApp({ db, userId, onLogout }) {
           </div>
         )}
 
-        {tab==="evolution"&&(
-          <div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>Mon évolution</div>
-            {timeline.length<2
-              ?<div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:28,color:"#555",fontSize:13,textAlign:"center"}}>Les données d'évolution apparaîtront ici au fil du temps</div>
-              :<div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:24}}>
-                <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:18}}>Évolution du patrimoine</div>
-                <ResponsiveContainer width="100%" height={260}><AreaChart data={timeline}><defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.25}/><stop offset="95%" stopColor={color} stopOpacity={0}/></linearGradient></defs><XAxis dataKey="date" tick={{fill:"#444",fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:"#444",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`}/><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11}}/><Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad)" dot={{fill:color,r:3}}/></AreaChart></ResponsiveContainer>
-              </div>}
-          </div>
-        )}
 
         {tab==="budget"&&<BudgetSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineTotal}/>}
-        {tab==="immo_locatif"&&<ImmoLocatifSection/>}
-        {tab==="louer_acheter"&&<LouerAcheterSection/>}
+        {tab==="immobilier"&&<ImmobilierSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="impots"&&<ImpotsSection/>}
         {tab==="bourse"&&<BourseSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="dividendes"&&<DividendesSection db={db} clientId={client.id} isReadOnly={false}/>}
