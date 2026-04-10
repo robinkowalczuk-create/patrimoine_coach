@@ -3,6 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
+import { Analytics } from '@vercel/analytics/react';
 
 const SB_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYWdvenNiamp3em5yYnV5dHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjcxNzUsImV4cCI6MjA5MDcwMzE3NX0.WWQeWjDEq6r3HgSYRAtE8eXk34YQYXc5UZ07cvR_b1I";
@@ -207,11 +208,21 @@ export default function App() {
     if (saved) { try { const s = JSON.parse(saved); setSession(s); setIsAdmin((s.user?.email||"")===ADMIN_EMAIL); } catch {} }
   }, []);
 
-  if (!session) return <LoginPage onLogin={handleLogin} />;
+  if (!session) return (
+    <>
+      <LoginPage onLogin={handleLogin} />
+      <Analytics />
+    </>
+  );
   const db = sb(session.access_token);
-  return isAdmin
-    ? <AdminApp db={db} session={session} onLogout={handleLogout} />
-    : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} />;
+  return (
+    <>
+      {isAdmin
+        ? <AdminApp db={db} session={session} onLogout={handleLogout} />
+        : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} />}
+      <Analytics />
+    </>
+  );
 }
 
 // ══════════════════════════════════════
