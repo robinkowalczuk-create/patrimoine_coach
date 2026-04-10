@@ -318,14 +318,30 @@ function BudgetSection({ db, clientId, isReadOnly }) {
           <BudgetGroup categorie="depense_fixe" items={fixes} />
           <BudgetGroup categorie="depense_variable" items={variables} />
 
-          {/* Résultat net */}
-          <div style={{ background: epargne >= 0 ? "#1A2F1F" : "#2F1010", border: `1px solid ${epargne>=0?"#5EBF7A30":"#E07A7A30"}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          {/* Épargne disponible */}
+          <div style={{ background: epargne >= 0 ? "#1A2F1F" : "#2F1010", border: `1px solid ${epargne>=0?"#5EBF7A30":"#E07A7A30"}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 9, color: epargne>=0?"#5EBF7A":"#E07A7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>Épargne disponible mensuelle</div>
               <div style={{ fontSize: 11, color: "#666" }}>Revenus ({fmt(totalRevenus)}) − Dépenses ({fmt(totalDepenses)})</div>
             </div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, color: epargne>=0?"#5EBF7A":"#E07A7A" }}>{fmt(epargne)}</div>
           </div>
+
+          {/* Virements épargne */}
+          <BudgetGroup categorie="virement" items={virements} />
+
+          {/* Épargne nette après virements */}
+          {virements.length > 0 && (
+            <div style={{ background: "#1A1A2F", border: "1px solid #8B7BAB30", borderRadius: 12, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+              <div>
+                <div style={{ fontSize: 9, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 3 }}>Épargne restante après virements</div>
+                <div style={{ fontSize: 11, color: "#555" }}>{fmt(epargne)} − {fmt(totalVirements)} virements</div>
+              </div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: (epargne - totalVirements) >= 0 ? "#8B7BAB" : "#E07A7A" }}>
+                {fmt(epargne - totalVirements)}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Graphique */}
@@ -348,7 +364,8 @@ function BudgetSection({ db, clientId, isReadOnly }) {
               { label: "Total revenus", val: totalRevenus, color: "#7C9B8A" },
               { label: "Dépenses fixes", val: totalFixes, color: "#E07A7A" },
               { label: "Dépenses variables", val: totalVariables, color: "#C9A96E" },
-              { label: "Épargne dispo.", val: epargne, color: epargne>=0?"#6AAED4":"#E07A7A" },
+              { label: "Virements épargne", val: totalVirements, color: "#8B7BAB" },
+              { label: "Épargne nette dispo.", val: epargne - totalVirements, color: (epargne-totalVirements)>=0?"#6AAED4":"#E07A7A" },
             ].map((r,i) => (
               <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1A1A1E" }}>
                 <div style={{ display:"flex",alignItems:"center",gap:6 }}>
