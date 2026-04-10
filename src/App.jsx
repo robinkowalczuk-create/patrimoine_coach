@@ -83,7 +83,7 @@ const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
-const ALL_TABS = ["identification","synthese","objectifs","simulateur","immobilier","impots","bourse","dividendes","budget","notes"];
+const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes"];
 const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
 const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
 
@@ -249,14 +249,16 @@ function BudgetSection({ db, clientId, isReadOnly }) {
   const revenus = b.filter(x => x.categorie === "revenu");
   const fixes = b.filter(x => x.categorie === "depense_fixe");
   const variables = b.filter(x => x.categorie === "depense_variable");
+  const virements = b.filter(x => x.categorie === "virement");
   const totalRevenus = revenus.reduce((s, x) => s + x.montant, 0);
   const totalFixes = fixes.reduce((s, x) => s + x.montant, 0);
   const totalVariables = variables.reduce((s, x) => s + x.montant, 0);
   const totalDepenses = totalFixes + totalVariables;
+  const totalVirements = virements.reduce((s, x) => s + x.montant, 0);
   const epargne = totalRevenus - totalDepenses;
 
-  const sectionColor = { "revenu": "#7C9B8A", "depense_fixe": "#E07A7A", "depense_variable": "#C9A96E" };
-  const sectionLabel = { "revenu": "Revenus", "depense_fixe": "Dépenses fixes", "depense_variable": "Dépenses variables" };
+  const sectionColor = { "revenu": "#7C9B8A", "depense_fixe": "#E07A7A", "depense_variable": "#C9A96E", "virement": "#8B7BAB" };
+  const sectionLabel = { "revenu": "Revenus", "depense_fixe": "Dépenses fixes", "depense_variable": "Dépenses variables", "virement": "Virements épargne / investissement" };
 
   function BudgetGroup({ categorie, items }) {
     const col = sectionColor[categorie];
@@ -294,7 +296,8 @@ function BudgetSection({ db, clientId, isReadOnly }) {
     { name: "Revenus", val: totalRevenus, color: "#7C9B8A" },
     { name: "Dép. fixes", val: totalFixes, color: "#E07A7A" },
     { name: "Dép. var.", val: totalVariables, color: "#C9A96E" },
-    { name: "Épargne dispo.", val: Math.max(0, epargne), color: "#6AAED4" },
+    { name: "Virements", val: totalVirements, color: "#8B7BAB" },
+    { name: "Épargne dispo.", val: Math.max(0, epargne - totalVirements), color: "#6AAED4" },
   ];
 
   return (
@@ -401,7 +404,8 @@ function BourseSection({ db, clientId, isReadOnly }) {
   const [actions, setActions] = useState([]);
   const [quotes, setQuotes] = useState({});
   const [loadingQuotes, setLoadingQuotes] = useState(false);
-  const [modal, setModal] = useState(false);
+  const [modal, setModal] = useState(null); // null | "new" | "edit"
+  const [editAction, setEditAction] = useState(null);
   const [form, setForm] = useState({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
   const [saving, setSaving] = useState(false);
 
@@ -440,22 +444,38 @@ function BourseSection({ db, clientId, isReadOnly }) {
   }
 
   async function saveAction() {
-    if (!form.ticker || !form.nombre || !form.prix_achat) return;
+    if (!form.ticker || !form.nombre) return;
     setSaving(true);
     try {
-      await db.post("actions", {
-        client_id: clientId,
-        ticker: form.ticker.toUpperCase().trim(),
-        nom: form.nom,
-        nombre: parseFloat(form.nombre),
-        prix_achat: parseFloat(form.prix_achat),
-        date_achat: form.date_achat,
-      });
+      if (modal === "edit" && editAction) {
+        await db.patch("actions", editAction.id, {
+          ticker: form.ticker.toUpperCase().trim(),
+          nom: form.nom,
+          nombre: parseFloat(form.nombre),
+          prix_achat: parseFloat(form.prix_achat) || 0,
+          date_achat: form.date_achat,
+        });
+      } else {
+        await db.post("actions", {
+          client_id: clientId,
+          ticker: form.ticker.toUpperCase().trim(),
+          nom: form.nom,
+          nombre: parseFloat(form.nombre),
+          prix_achat: parseFloat(form.prix_achat) || 0,
+          date_achat: form.date_achat,
+        });
+      }
       await loadActions();
-      setModal(false);
+      setModal(null); setEditAction(null);
       setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
     } catch(e) { alert("Erreur : " + e.message); }
     setSaving(false);
+  }
+
+  function openEdit(a) {
+    setEditAction(a);
+    setForm({ ticker: a.ticker, nom: a.nom || "", nombre: a.nombre, prix_achat: a.prix_achat, date_achat: a.date_achat || new Date().toISOString().split("T")[0] });
+    setModal("edit");
   }
 
   async function delAction(id) {
@@ -502,7 +522,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => fetchQuotes(actions)} style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10 }}>↻ Actualiser</button>
-            {!isReadOnly && <button onClick={() => setModal(true)} style={{ padding: "5px 12px", background: "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>}
+            {!isReadOnly && <button onClick={() => { setEditAction(null); setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] }); setModal("new"); }} style={{ padding: "5px 12px", background: "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>}
           </div>
         </div>
 
@@ -541,7 +561,10 @@ function BourseSection({ db, clientId, isReadOnly }) {
                 <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "—"}</div>
                 <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "—"}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {!isReadOnly && <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>}
+                  {!isReadOnly && <>
+                    <button onClick={() => openEdit(a)} style={{ padding: "3px 8px", background: "#1A1A1E", border: "1px solid #2A2A2A", borderRadius: 5, cursor: "pointer", color: "#888", fontSize: 10 }}>✏️</button>
+                    <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>
+                  </>}
                 </div>
               </div>
 
@@ -575,11 +598,11 @@ function BourseSection({ db, clientId, isReadOnly }) {
         Exemples de tickers : AAPL (Apple), MC.PA (LVMH), TTE.PA (TotalEnergies), MSFT (Microsoft), AIR.PA (Airbus)
       </div>
 
-      {/* Modal ajout */}
+      {/* Modal ajout/edit */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 420, maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouvelle position</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>{modal === "edit" ? "Modifier la position" : "Nouvelle position"}</div>
             {[
               ["ticker", "Ticker * (ex: AAPL, MC.PA)", "text", "AAPL"],
               ["nom", "Nom de l'entreprise", "text", "Apple Inc."],
@@ -1534,15 +1557,25 @@ function LouerAcheterSection() {
 // ══════════════════════════════════════
 //  SIMULATEUR IMPÔTS
 // ══════════════════════════════════════
-function ImpotsSection() {
+function ImpotsSection({ clientId }) {
+  const storageKey = `impots_${clientId || "default"}`;
+  const savedData = (() => { try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; } })();
   const [p, setP] = useState({
     salaire_net: 40000, revenus_fonciers: 0, revenus_capitaux: 0, autres_revenus: 0,
     parts: 1, pension_alimentaire_versee: 0, frais_reels: 0,
     dons: 0, investissement_pinel: 0, sofica: 0,
     per_versements: 0, compte_epargne_retraite: 0,
     regime_frais: "forfait",
+    ...savedData,
   });
-  const up = (k, v) => setP(prev => ({ ...prev, [k]: parseFloat(v) || 0 }));
+  const up = (k, v) => {
+    const val = k === "regime_frais" ? v : (parseFloat(v) || 0);
+    setP(prev => {
+      const next = { ...prev, [k]: val };
+      try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtPct = n => `${parseFloat(n).toFixed(1)}%`;
 
@@ -1660,7 +1693,7 @@ function ImpotsSection() {
           </div>
           <div style={{ marginBottom: 10 }}>
             <div style={labS}>Frais professionnels</div>
-            <select value={p.regime_frais} onChange={e => setP(prev => ({ ...prev, regime_frais: e.target.value }))} style={inpS}>
+            <select value={p.regime_frais} onChange={e => up("regime_frais", e.target.value)} style={inpS}>
               <option value="forfait">Forfait 10% (plafonné à 14 171€)</option>
               <option value="reel">Frais réels</option>
             </select>
@@ -2136,6 +2169,91 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
 }
 
 // ══════════════════════════════════════
+//  NOTES SECTION (Supabase-backed)
+// ══════════════════════════════════════
+function NotesSection({ db, clientId, auteur, color }) {
+  const [notes, setNotes] = useState([]);
+  const [newNote, setNewNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { if (clientId) loadNotes(); }, [clientId]);
+
+  async function loadNotes() {
+    setLoading(true);
+    try {
+      const n = await db.get("notes", `select=*&client_id=eq.${clientId}&order=created_at.desc`);
+      setNotes(n);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  }
+
+  async function addNote() {
+    if (!newNote.trim()) return;
+    setSaving(true);
+    try {
+      await db.post("notes", { client_id: clientId, texte: newNote, auteur });
+      setNewNote("");
+      await loadNotes();
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  async function delNote(id) {
+    if (auteur !== "admin") return; // seul l'admin peut supprimer
+    try { await db.del("notes", id); await loadNotes(); } catch(e) { alert(e.message); }
+  }
+
+  const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Notes & suivi</div>
+
+      {/* Saisie */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>
+          {auteur === "admin" ? "Note du conseiller" : "Ma note"}
+        </div>
+        <textarea value={newNote} onChange={e => setNewNote(e.target.value)}
+          placeholder={auteur === "admin" ? "Résumé du rendez-vous, décision prise, ajustement stratégique..." : "Ma question, mon commentaire, mon observation..."}
+          style={{ width: "100%", minHeight: 90, background: "#141416", border: "1px solid #222", borderRadius: 8, padding: "10px 12px", color: "#CCC", fontSize: 13, lineHeight: 1.6, resize: "none", fontFamily: "inherit" }} />
+        <button onClick={addNote} disabled={saving}
+          style={{ marginTop: 10, padding: "9px 20px", background: color || "#C9A96E", border: "none", borderRadius: 7, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
+          {saving ? "..." : "Enregistrer"}
+        </button>
+      </div>
+
+      {/* Liste des notes */}
+      {loading && <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>Chargement...</div>}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {!loading && notes.length === 0 && (
+          <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>Aucune note pour l'instant</div>
+        )}
+        {notes.map((n) => {
+          const isAdmin = n.auteur === "admin";
+          const noteColor = isAdmin ? (color || "#C9A96E") : "#6AAED4";
+          return (
+            <div key={n.id} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderLeft: `3px solid ${noteColor}50`, borderRadius: "0 10px 10px 0", padding: "14px 18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontSize: 10, color: noteColor }}>{isAdmin ? "👤 Conseiller" : "🙋 Client"}</div>
+                  <div style={{ fontSize: 10, color: "#444" }}>{fmtDate(n.created_at)}</div>
+                </div>
+                {auteur === "admin" && (
+                  <button onClick={() => delNote(n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11, fontFamily: "inherit" }}>✕</button>
+                )}
+              </div>
+              <div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.6 }}>{n.texte}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
 function AdminApp({ db, onLogout }) {
@@ -2146,7 +2264,6 @@ function AdminApp({ db, onLogout }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
-  const [notes, setNotes] = useState({});
   const [identifications, setIdentifications] = useState({});
   const [page, setPage] = useState("global");
   const [tab, setTab] = useState("identification");
@@ -2154,7 +2271,7 @@ function AdminApp({ db, onLogout }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-  const [newNote, setNewNote] = useState("");
+
 
   useEffect(() => { loadAll(); }, []);
   useEffect(() => { if (activeClient) loadClientData(activeClient.id); }, [activeClient?.id]);
@@ -2198,7 +2315,7 @@ function AdminApp({ db, onLogout }) {
     const dates=Object.keys(byDate).sort(); const lk={};
     return dates.map(d=>{ produits.forEach(p=>{ if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id]; }); return { date:fmtDate(d), total:Object.values(lk).reduce((s,v)=>s+v,0) }; });
   })();
-  const clientNotes = activeClient?(notes[activeClient.id]||[]):[];
+
 
   async function save() {
     setSaving(true);
@@ -2208,6 +2325,7 @@ function AdminApp({ db, onLogout }) {
       else if (modal.type==="produit_new") { await db.post("produits",{...form,client_id:activeClient.id}); await loadClientData(activeClient.id); }
       else if (modal.type==="avoir_new") { await db.post("avoirs",{montant:parseFloat(form.montant),date:form.date,client_id:activeClient.id,produit_id:modal.produit_id}); await loadClientData(activeClient.id); }
       else if (modal.type==="objectif_new") { await db.post("objectifs",{nom:form.nom,montant_cible:parseFloat(form.montant_cible),description:form.description,client_id:activeClient.id}); await loadClientData(activeClient.id); }
+      else if (modal.type==="objectif_edit") { await db.patch("objectifs",modal.objectif_id,{nom:form.nom,montant_cible:parseFloat(form.montant_cible),description:form.description}); await loadClientData(activeClient.id); }
       else if (modal.type==="jalon_new") { await db.post("jalons",{...form,montant_cible:parseFloat(form.montant_cible)||null,objectif_id:modal.objectif_id}); await loadClientData(activeClient.id); }
       else if (modal.type==="lier_produit") {
         const already=objProduits.filter(op=>op.objectif_id===modal.objectif_id).map(op=>op.produit_id);
@@ -2229,17 +2347,12 @@ function AdminApp({ db, onLogout }) {
     const d = {
       client_new: EMPTY_CLIENT,
       client_edit: { nom:activeClient?.nom||"", statut:activeClient?.statut||"En bonne voie", date_debut:activeClient?.date_debut||"", patrimoine_cible:activeClient?.patrimoine_cible||"", onglets_actifs:activeClient?.onglets_actifs||ALL_TABS },
-      produit_new: EMPTY_PRODUIT, avoir_new: EMPTY_AVOIR, objectif_new: EMPTY_OBJECTIF, jalon_new: EMPTY_JALON, lier_produit: {},
+      produit_new: EMPTY_PRODUIT, avoir_new: EMPTY_AVOIR, objectif_new: EMPTY_OBJECTIF, objectif_edit: { nom:extra.nom||"", montant_cible:extra.montant_cible||"", description:extra.description||"" }, jalon_new: EMPTY_JALON, lier_produit: {},
     };
     setForm(d[type]||{}); setModal({type,...extra});
   }
 
-  function addNote() {
-    if(!newNote.trim()||!activeClient)return;
-    const today=new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"});
-    setNotes(prev=>({...prev,[activeClient.id]:[{date:today,texte:newNote},...(prev[activeClient.id]||[])]}));
-    setNewNote("");
-  }
+
 
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
   const inp=(k,l,t="text",ph="")=>(
@@ -2452,6 +2565,7 @@ function AdminApp({ db, onLogout }) {
                                 <div><div style={{fontSize:15,fontWeight:500,marginBottom:3}}>{obj.nom}</div>{obj.description&&<div style={{fontSize:11,color:"#666"}}>{obj.description}</div>}</div>
                                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                                   <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:ocol}}>{fmt(obj.montant_cible)}</div>
+                                  <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#888",fontSize:10}}>✏️</button>
                                   <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
                                 </div>
                               </div>
@@ -2499,25 +2613,12 @@ function AdminApp({ db, onLogout }) {
                 {tab==="budget"&&<BudgetSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineActuel}/>}
                 {tab==="immobilier"&&<ImmobilierSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
-                {tab==="impots"&&<ImpotsSection/>}
+                {tab==="impots"&&<ImpotsSection clientId={activeClient.id}/>}
                 {tab==="bourse"&&<BourseSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="dividendes"&&<DividendesSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
                 {tab==="identification"&&<IdentificationSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
 
-                {tab==="notes"&&(
-                  <div>
-                    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>Notes & suivi</div>
-                    <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20,marginBottom:16}}>
-                      <textarea value={newNote} onChange={e=>setNewNote(e.target.value)} placeholder="Résumé du rendez-vous, décision prise..."
-                        style={{width:"100%",minHeight:90,background:"#141416",border:"1px solid #222",borderRadius:8,padding:"10px 12px",color:"#CCC",fontSize:13,lineHeight:1.6,resize:"none",fontFamily:"inherit"}}/>
-                      <button className="btn" onClick={addNote} style={{marginTop:10,padding:"9px 20px",background:color,border:"none",borderRadius:7,cursor:"pointer",color:"#0C0C0E",fontSize:12,fontWeight:600}}>Enregistrer</button>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {clientNotes.length===0&&<div style={{color:"#444",fontSize:13,textAlign:"center",padding:"20px 0"}}>Aucune note</div>}
-                      {clientNotes.map((n,i)=><div key={i} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderLeft:`3px solid ${color}50`,borderRadius:"0 10px 10px 0",padding:"14px 18px"}}><div style={{fontSize:10,color,marginBottom:6}}>{n.date}</div><div style={{fontSize:13,color:"#AAA",lineHeight:1.6}}>{n.texte}</div></div>)}
-                    </div>
-                  </div>
-                )}
+                {tab==="notes"&&<NotesSection db={db} clientId={activeClient.id} auteur="admin" color={color}/>}
               </div>
             </>
           );
@@ -2528,7 +2629,7 @@ function AdminApp({ db, onLogout }) {
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {(modal.type==="client_new"||modal.type==="client_edit")&&<>
   {inp("nom","Nom complet *","text","Sophie Martin")}
   {inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}
@@ -2558,7 +2659,7 @@ function AdminApp({ db, onLogout }) {
 </>}}
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
-            {modal.type==="objectif_new"&&<>{inp("nom","Nom *","text","Retraite anticipée")}{inp("montant_cible","Montant cible (€) *","number","300000")}{inp("description","Description","text","Partir à 55 ans")}</>}
+            {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Retraite anticipée")}{inp("montant_cible","Montant cible (€) *","number","300000")}{inp("description","Description","text","Partir à 55 ans")}</>}
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Ouvrir un PEA")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA Bourse Direct")}{inp("moyens","Moyens","text","200€/mois dès janvier")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
@@ -2653,6 +2754,7 @@ function ClientApp({ db, userId, onLogout }) {
       if (modal.type==="produit_new") { await db.post("produits",{...form,client_id:client.id}); }
       else if (modal.type==="avoir_new") { await db.post("avoirs",{montant:parseFloat(form.montant),date:form.date,client_id:client.id,produit_id:modal.produit_id}); }
       else if (modal.type==="objectif_new") { await db.post("objectifs",{nom:form.nom,montant_cible:parseFloat(form.montant_cible),description:form.description,client_id:client.id}); }
+      else if (modal.type==="objectif_edit") { await db.patch("objectifs",modal.objectif_id,{nom:form.nom,montant_cible:parseFloat(form.montant_cible),description:form.description}); }
       else if (modal.type==="jalon_new") { await db.post("jalons",{...form,montant_cible:parseFloat(form.montant_cible)||null,objectif_id:modal.objectif_id}); }
       else if (modal.type==="lier_produit") {
         const already=objProduits.filter(op=>op.objectif_id===modal.objectif_id).map(op=>op.produit_id);
@@ -2669,7 +2771,7 @@ function ClientApp({ db, userId, onLogout }) {
   async function delJalon(id) { await db.del("jalons",id); reload(); }
 
   function openModal(type,extra={}) {
-    const d={produit_new:EMPTY_PRODUIT,avoir_new:EMPTY_AVOIR,objectif_new:EMPTY_OBJECTIF,jalon_new:EMPTY_JALON,lier_produit:{}};
+    const d={produit_new:EMPTY_PRODUIT,avoir_new:EMPTY_AVOIR,objectif_new:EMPTY_OBJECTIF,objectif_edit:{nom:extra.nom||"",montant_cible:extra.montant_cible||"",description:extra.description||""},jalon_new:EMPTY_JALON,lier_produit:{}};
     setForm(d[type]||{}); setModal({type,...extra});
   }
 
@@ -2805,6 +2907,7 @@ function ClientApp({ db, userId, onLogout }) {
                         <div><div style={{fontSize:15,fontWeight:500,marginBottom:3}}>{obj.nom}</div>{obj.description&&<div style={{fontSize:11,color:"#666"}}>{obj.description}</div>}</div>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:ocol}}>{fmt(obj.montant_cible)}</div>
+                          <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#888",fontSize:10}}>✏️</button>
                           <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
                         </div>
                       </div>
@@ -2850,20 +2953,21 @@ function ClientApp({ db, userId, onLogout }) {
         {tab==="budget"&&<BudgetSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="simulateur"&&<SimulateurSection patrimoineActuel={patrimoineTotal}/>}
         {tab==="immobilier"&&<ImmobilierSection db={db} clientId={client.id} isReadOnly={false}/>}
-        {tab==="impots"&&<ImpotsSection/>}
+        {tab==="impots"&&<ImpotsSection clientId={client.id}/>}
         {tab==="bourse"&&<BourseSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="dividendes"&&<DividendesSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
+        {tab==="notes"&&<NotesSection db={db} clientId={client.id} auteur="client" color={color}/>}
       </div>
 
       {/* MODALS CLIENT */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
-            {modal.type==="objectif_new"&&<>{inp("nom","Nom *","text","Mon objectif")}{inp("montant_cible","Montant cible (€) *","number","50000")}{inp("description","Description","text","Description de mon objectif")}</>}
+            {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Mon objectif")}{inp("montant_cible","Montant cible (€) *","number","50000")}{inp("description","Description","text","Description de mon objectif")}</>}
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Étape 1")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA")}{inp("moyens","Comment y arriver","text","200€/mois")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
