@@ -425,6 +425,9 @@ function BourseSection({ db, clientId, isReadOnly }) {
   const [editAction, setEditAction] = useState(null);
   const [form, setForm] = useState({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
   const [saving, setSaving] = useState(false);
+  const [filterText, setFilterText] = useState("");
+  const [sortCol, setSortCol] = useState("nom");
+  const [sortAsc, setSortAsc] = useState(true);
 
   useEffect(() => { if (clientId) loadActions(); }, [clientId]);
 
@@ -509,6 +512,34 @@ function BourseSection({ db, clientId, isReadOnly }) {
   const totalPVPct = totalInvesti > 0 ? ((totalPV / totalInvesti) * 100).toFixed(2) : 0;
   const totalDividendes = 0; // moved to DividendesSection
 
+  // Filter + sort
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortAsc(a => !a);
+    else { setSortCol(col); setSortAsc(true); }
+  };
+  const actionsFiltrees = actions
+    .filter(a => filterText === "" ||
+      (a.nom || "").toLowerCase().includes(filterText.toLowerCase()) ||
+      a.ticker.toLowerCase().includes(filterText.toLowerCase())
+    )
+    .sort((a, b) => {
+      let va, vb;
+      if (sortCol === "nom") { va = a.nom || a.ticker; vb = b.nom || b.ticker; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+      if (sortCol === "ticker") { va = a.ticker; vb = b.ticker; return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+      if (sortCol === "nombre") { va = a.nombre; vb = b.nombre; }
+      if (sortCol === "prix_achat") { va = a.prix_achat; vb = b.prix_achat; }
+      if (sortCol === "prix_actuel") { va = quotes[a.ticker]?.price || 0; vb = quotes[b.ticker]?.price || 0; }
+      if (sortCol === "valeur") { va = a.nombre * (quotes[a.ticker]?.price || a.prix_achat); vb = b.nombre * (quotes[b.ticker]?.price || b.prix_achat); }
+      if (sortCol === "pv") { va = (quotes[a.ticker]?.price || a.prix_achat) - a.prix_achat; vb = (quotes[b.ticker]?.price || b.prix_achat) - b.prix_achat; }
+      return sortAsc ? va - vb : vb - va;
+    });
+  const SortBtn = ({ col, label }) => (
+    <div onClick={() => toggleSort(col)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 3, userSelect: "none" }}>
+      <span style={{ fontSize: 9, color: sortCol === col ? "#C9A96E" : "#444", textTransform: "uppercase", letterSpacing: "0.12em" }}>{label}</span>
+      <span style={{ fontSize: 8, color: sortCol === col ? "#C9A96E" : "#333" }}>{sortCol === col ? (sortAsc ? "↑" : "↓") : "↕"}</span>
+    </div>
+  );
+
   const pvColor = (pv) => pv >= 0 ? "#5EBF7A" : "#E07A7A";
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
   const fmtPct = n => `${n >= 0 ? "+" : ""}${parseFloat(n).toFixed(2)}%`;
@@ -534,8 +565,12 @@ function BourseSection({ db, clientId, isReadOnly }) {
       {/* Header table */}
       <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>
-            Positions ({actions.length}) {loadingQuotes && <span style={{ color: "#C9A96E", marginLeft: 8 }}>↻ Actualisation...</span>}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+              Positions ({actionsFiltrees.length}/{actions.length}) {loadingQuotes && <span style={{ color: "#C9A96E", marginLeft: 8 }}>↻ Actualisation...</span>}
+            </div>
+            <input placeholder="🔍 Filtrer par nom ou ticker..." value={filterText} onChange={e => setFilterText(e.target.value)}
+              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit", width: 200 }} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={() => fetchQuotes(actions)} style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10 }}>↻ Actualiser</button>
@@ -558,7 +593,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
           </div>
         )}
 
-        {actions.map((a) => {
+        {actionsFiltrees.map((a) => {
           const q = quotes[a.ticker];
           const prixActuel = q ? q.price : null;
           const valeur = prixActuel ? a.nombre * prixActuel : null;
@@ -896,6 +931,9 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   // Entreprises distinctes
   const entreprises = [...new Set(dividendes.map(d => d.entreprise))].sort();
 
+  // Supports distincts
+  const supports = [...new Set(dividendes.map(d => d.support || "Non défini"))].sort();
+
   // Matrice entreprise x année
   const matrix = {};
   entreprises.forEach(e => {
@@ -905,6 +943,12 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   dividendes.forEach(d => {
     if (!matrix[d.entreprise]) matrix[d.entreprise] = {};
     matrix[d.entreprise][d.annee] = (matrix[d.entreprise][d.annee] || 0) + d.montant;
+  });
+
+  // Support de chaque entreprise (prend le premier trouvé)
+  const entrepriseSupport = {};
+  dividendes.forEach(d => {
+    if (!entrepriseSupport[d.entreprise]) entrepriseSupport[d.entreprise] = d.support || "Non défini";
   });
 
   // Total par année
@@ -917,6 +961,27 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   const totalParEntreprise = {};
   entreprises.forEach(e => {
     totalParEntreprise[e] = dividendes.filter(d => d.entreprise === e).reduce((s, d) => s + d.montant, 0);
+  });
+
+  // Total par support x année (pour sous-totaux)
+  const totalParSupportAnnee = {};
+  supports.forEach(s => {
+    totalParSupportAnnee[s] = {};
+    annees.forEach(a => {
+      totalParSupportAnnee[s][a] = dividendes
+        .filter(d => (d.support || "Non défini") === s && d.annee === a)
+        .reduce((sum, d) => sum + d.montant, 0);
+    });
+  });
+  const totalParSupport = {};
+  supports.forEach(s => {
+    totalParSupport[s] = dividendes.filter(d => (d.support || "Non défini") === s).reduce((sum, d) => sum + d.montant, 0);
+  });
+
+  // Grouper les entreprises par support pour le tableau
+  const entreprisesParSupport = {};
+  supports.forEach(s => {
+    entreprisesParSupport[s] = entreprises.filter(e => entrepriseSupport[e] === s);
   });
 
   // Chart data - par année croissant
@@ -1001,21 +1066,56 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                 </tr>
               </thead>
               <tbody>
-                {entreprisesFiltrees.map((e, ei) => (
-                  <tr key={e} style={{ borderBottom: "1px solid #1A1A1E", background: ei % 2 === 0 ? "transparent" : "#0A0A0C" }}>
-                    <td style={{ padding: "10px 20px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
-                    {annees.map(a => (
-                      <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: matrix[e][a] > 0 ? "#E2DDD6" : "#333", fontWeight: matrix[e][a] > 0 ? 500 : 400 }}>
-                        {matrix[e][a] > 0 ? fmt(matrix[e][a]) : "—"}
-                      </td>
-                    ))}
-                    <td style={{ padding: "10px 20px", textAlign: "right", color: "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParEntreprise[e])}</td>
-                  </tr>
-                ))}
+                {supports.map(support => {
+                  const entreprisesSupport = (entreprisesParSupport[support] || [])
+                    .filter(e => filterText === "" || e.toLowerCase().includes(filterText.toLowerCase()))
+                    .sort((a, b) => {
+                      if (sortBy === "nom") return a.localeCompare(b);
+                      if (sortBy === "total_desc") return totalParEntreprise[b] - totalParEntreprise[a];
+                      if (sortBy === "total_asc") return totalParEntreprise[a] - totalParEntreprise[b];
+                      return a.localeCompare(b);
+                    });
+                  if (entreprisesSupport.length === 0) return null;
+                  return (
+                    <React.Fragment key={support}>
+                      {/* Support header row */}
+                      <tr style={{ background: "#141416", borderBottom: "1px solid #1A1A1E", borderTop: "2px solid #2A2A2A" }}>
+                        <td colSpan={annees.length + 2} style={{ padding: "8px 20px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#8B7BAB" }} />
+                            <span style={{ fontSize: 10, color: "#8B7BAB", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em" }}>{support}</span>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Entreprises rows */}
+                      {entreprisesSupport.map((e, ei) => (
+                        <tr key={e} style={{ borderBottom: "1px solid #1A1A1E", background: ei % 2 === 0 ? "transparent" : "#0A0A0C" }}>
+                          <td style={{ padding: "9px 20px 9px 30px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
+                          {annees.map(a => (
+                            <td key={a} style={{ padding: "9px 16px", textAlign: "right", color: (matrix[e]?.[a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[e]?.[a] || 0) > 0 ? 500 : 400 }}>
+                              {(matrix[e]?.[a] || 0) > 0 ? fmt(matrix[e][a]) : "—"}
+                            </td>
+                          ))}
+                          <td style={{ padding: "9px 20px", textAlign: "right", color: "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParEntreprise[e])}</td>
+                        </tr>
+                      ))}
+                      {/* Support subtotal row */}
+                      <tr style={{ borderBottom: "1px solid #2A2A2A", background: "#0A0A0C" }}>
+                        <td style={{ padding: "8px 20px", fontSize: 11, color: "#8B7BAB", fontWeight: 600 }}>Sous-total {support}</td>
+                        {annees.map(a => (
+                          <td key={a} style={{ padding: "8px 16px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontWeight: 600 }}>
+                            {totalParSupportAnnee[support]?.[a] > 0 ? fmt(totalParSupportAnnee[support][a]) : "—"}
+                          </td>
+                        ))}
+                        <td style={{ padding: "8px 20px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 600 }}>{fmt(totalParSupport[support])}</td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr style={{ borderTop: "2px solid #2A2A2A" }}>
-                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total</td>
+                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total général</td>
                   {annees.map(a => (
                     <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: a === CURRENT_YEAR ? "#5EBF7A" : "#C9A96E", fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontWeight: 600 }}>{fmt(totalParAnnee[a])}</td>
                   ))}
@@ -1578,21 +1678,23 @@ function ImpotsSection({ clientId }) {
   const storageKey = `impots_${clientId || "default"}`;
   const savedData = (() => { try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; } })();
   const [p, setP] = useState({
-    salaire_net: 40000, revenus_fonciers: 0, revenus_capitaux: 0, autres_revenus: 0,
-    parts: 1, pension_alimentaire_versee: 0, frais_reels: 0,
-    dons: 0, investissement_pinel: 0, sofica: 0,
-    per_versements: 0, compte_epargne_retraite: 0,
+    salaire_net: 40000, revenus_fonciers: "", revenus_capitaux: "", autres_revenus: "",
+    parts: 1, pension_alimentaire_versee: "", frais_reels: "",
+    dons: "", investissement_pinel: "", sofica: "",
+    per_versements: "", compte_epargne_retraite: "",
     regime_frais: "forfait",
     ...savedData,
   });
   const up = (k, v) => {
-    const val = k === "regime_frais" ? v : (parseFloat(v) || 0);
+    const val = k === "regime_frais" || k === "parts" ? v : v; // keep as string for display
     setP(prev => {
       const next = { ...prev, [k]: val };
       try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch {}
       return next;
     });
   };
+  // Helper to get numeric value (empty string = 0)
+  const pv = (k) => parseFloat(p[k]) || 0;
   const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtPct = n => `${parseFloat(n).toFixed(1)}%`;
 
@@ -1620,22 +1722,22 @@ function ImpotsSection({ clientId }) {
   // Le salaire net fiscal = salaire net après déduction des frais professionnels
   const deduction_frais = p.regime_frais === "forfait"
     ? Math.min(p.salaire_net * 0.10, 14426) // plafond 2025
-    : p.frais_reels;
+    : pv("frais_reels");
   const salaire_net_imposable = Math.max(0, p.salaire_net - deduction_frais);
 
-  const revenu_brut_global = salaire_net_imposable + p.revenus_fonciers + p.revenus_capitaux * 0.6 + p.autres_revenus - p.pension_alimentaire_versee;
+  const revenu_brut_global = salaire_net_imposable + pv("revenus_fonciers") + pv("revenus_capitaux") * 0.6 + pv("autres_revenus") - pv("pension_alimentaire_versee");
 
   // Déductions (charges déductibles du revenu imposable)
-  const deductions = p.per_versements + p.compte_epargne_retraite;
+  const deductions = pv("per_versements") + pv("compte_epargne_retraite");
   const revenu_net_imposable = Math.max(0, revenu_brut_global - deductions);
 
   // Calcul impôt progressif
   const impot_brut = calcImpot(revenu_net_imposable, p.parts);
 
   // Réductions d'impôt
-  const reduction_dons = Math.min(p.dons * 0.66, revenu_net_imposable * 0.20);
-  const reduction_pinel = p.investissement_pinel * 0.12;
-  const reduction_sofica = p.sofica * 0.36;
+  const reduction_dons = Math.min(pv("dons") * 0.66, revenu_net_imposable * 0.20);
+  const reduction_pinel = pv("investissement_pinel") * 0.12;
+  const reduction_sofica = pv("sofica") * 0.36;
   const total_reductions = reduction_dons + reduction_pinel + reduction_sofica;
 
   const impot_net = Math.max(0, impot_brut - total_reductions);
@@ -1670,10 +1772,9 @@ function ImpotsSection({ clientId }) {
       <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>⚠️ Estimation indicative — barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
 
       {/* KPIs */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      <div className="grid-3" style={{ marginBottom: 20 }}>
         {[
           { label: "Impôt estimé", val: fmt(impot_net), color: "#E07A7A", bg: "#2F1010" },
-          { label: "Taux moyen d'imposition", val: fmtPct(taux_moyen), color: "#C9A96E", bg: "#1A1712" },
           { label: "Taux prélèvement à la source", val: fmtPct(taux_source), color: "#7C9B8A", bg: "#0F1A12" },
           { label: "Tranche marginale (TMI)", val: fmtPct(tmi), color: "#8B7BAB", bg: "#1A1A2F" },
         ].map((k,i) => (
