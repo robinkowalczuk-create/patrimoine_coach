@@ -890,9 +890,23 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
   const [saving, setSaving] = useState(false);
-  const [sortBy, setSortBy] = useState("nom"); // "nom" | "total" | "annee_asc" | "annee_desc"
+  const [sortBy, setSortBy] = useState("nom");
   const [filterText, setFilterText] = useState("");
+  const [editingObjectif, setEditingObjectif] = useState(false);
   const CURRENT_YEAR = new Date().getFullYear();
+  const PREV_YEAR = CURRENT_YEAR - 1;
+  const objKey = `div_objectif_${clientId}`;
+  const [objectifAnnuel, setObjectifAnnuel] = useState(() => {
+    try { return parseFloat(localStorage.getItem(objKey)) || 0; } catch { return 0; }
+  });
+  const [objectifInput, setObjectifInput] = useState("");
+
+  function saveObjectif() {
+    const val = parseFloat(objectifInput) || 0;
+    setObjectifAnnuel(val);
+    try { localStorage.setItem(objKey, val); } catch {}
+    setEditingObjectif(false);
+  }
 
   useEffect(() => { if (clientId) loadDividendes(); }, [clientId]);
 
@@ -924,6 +938,9 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   // Totaux
   const totalGlobal = dividendes.reduce((s, d) => s + d.montant, 0);
   const totalAnneeEnCours = dividendes.filter(d => d.annee === CURRENT_YEAR).reduce((s, d) => s + d.montant, 0);
+  const totalAnneePrecedente = dividendes.filter(d => d.annee === PREV_YEAR).reduce((s, d) => s + d.montant, 0);
+  const pctObjectif = objectifAnnuel > 0 ? Math.min(100, (totalAnneePrecedente / objectifAnnuel) * 100) : 0;
+  const objectifAtteint = objectifAnnuel > 0 && totalAnneePrecedente >= objectifAnnuel;
 
   // Années distinctes triées desc
   const annees = [...new Set(dividendes.map(d => d.annee))].sort((a, b) => b - a);
@@ -1001,7 +1018,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
   return (
     <div>
       {/* KPIs */}
-      <div className="grid-3" style={{ marginBottom: 20 }}>
+      <div className="grid-3" style={{ marginBottom: 16 }}>
         <div style={{ background: "#1A2A1F", border: "1px solid #5EBF7A30", borderRadius: 10, padding: "14px 16px" }}>
           <div style={{ fontSize: 9, color: "#5EBF7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {CURRENT_YEAR}</div>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#5EBF7A" }}>{fmt(totalAnneeEnCours)}</div>
@@ -1011,9 +1028,68 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalGlobal)}</div>
         </div>
         <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Versements saisis</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{dividendes.length}</div>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {PREV_YEAR}</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalAnneePrecedente)}</div>
         </div>
+      </div>
+
+      {/* Objectif annuel */}
+      <div style={{ background: objectifAtteint ? "#1A2F1F" : "#0F0F11", border: `1px solid ${objectifAtteint ? "#5EBF7A40" : objectifAnnuel > 0 ? "#C9A96E30" : "#1A1A1E"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: objectifAnnuel > 0 ? 14 : 0 }}>
+          <div>
+            <div style={{ fontSize: 9, color: objectifAtteint ? "#5EBF7A" : "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>
+              🎯 Objectif dividendes annuel
+            </div>
+            {objectifAnnuel > 0 && !editingObjectif && (
+              <div style={{ fontSize: 11, color: "#666" }}>
+                Basé sur {PREV_YEAR} · {fmt(totalAnneePrecedente)} reçus sur {fmt(objectifAnnuel)} visés
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {!editingObjectif && objectifAnnuel > 0 && (
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: objectifAtteint ? "#5EBF7A" : "#C9A96E" }}>
+                {fmt(objectifAnnuel)}
+              </div>
+            )}
+            {!editingObjectif && (
+              <button onClick={() => { setObjectifInput(objectifAnnuel || ""); setEditingObjectif(true); }}
+                style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 11, fontFamily: "inherit" }}>
+                {objectifAnnuel > 0 ? "✏️ Modifier" : "+ Définir un objectif"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {editingObjectif && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="number" placeholder="Ex: 5000" value={objectifInput} onChange={e => setObjectifInput(e.target.value)}
+              autoFocus
+              style={{ flex: 1, background: "#141416", border: "1px solid #C9A96E50", borderRadius: 7, padding: "9px 12px", color: "#CCC", fontSize: 13, fontFamily: "inherit" }} />
+            <span style={{ fontSize: 12, color: "#555" }}>€/an</span>
+            <button onClick={saveObjectif} style={{ padding: "9px 16px", background: "#C9A96E", border: "none", borderRadius: 7, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>Enregistrer</button>
+            <button onClick={() => setEditingObjectif(false)} style={{ padding: "9px 12px", background: "#141416", border: "1px solid #222", borderRadius: 7, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+          </div>
+        )}
+
+        {objectifAnnuel > 0 && !editingObjectif && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555", marginBottom: 6 }}>
+              <span>{fmt(totalAnneePrecedente)} ({PREV_YEAR})</span>
+              <span style={{ color: objectifAtteint ? "#5EBF7A" : "#C9A96E", fontWeight: 600 }}>
+                {objectifAtteint ? "✅ Objectif atteint !" : `${pctObjectif.toFixed(1)}% de l'objectif`}
+              </span>
+            </div>
+            <div style={{ background: "#1A1A1E", borderRadius: 4, height: 8, overflow: "hidden" }}>
+              <div style={{ width: `${pctObjectif}%`, height: "100%", background: objectifAtteint ? "#5EBF7A" : "#C9A96E", borderRadius: 4, transition: "width 0.6s ease" }} />
+            </div>
+            {!objectifAtteint && objectifAnnuel > 0 && (
+              <div style={{ fontSize: 10, color: "#555", marginTop: 5 }}>
+                Il manque {fmt(objectifAnnuel - totalAnneePrecedente)} pour atteindre l'objectif
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Graphique */}
