@@ -83,9 +83,9 @@ const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
-const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes"];
-const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes" };
-const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes" };
+const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes","informations"];
+const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" };
+const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes", informations:"Informations" };
 
 function getAge(dateNaissance) {
   if (!dateNaissance) return null;
@@ -1972,7 +1972,7 @@ function ImpotsSection({ clientId }) {
 // ══════════════════════════════════════
 //  SYNTHESE + EVOLUTION (sous-onglets)
 // ══════════════════════════════════════
-function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin }) {
+function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin, db, clientId }) {
   const [subTab, setSubTab] = useState("synthese");
   const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobilier": "#8B7BAB", "Autre": "#888" };
 
@@ -1980,7 +1980,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
     <div>
       {/* Sub-tabs */}
       <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
-        {[["synthese", "Synthèse"], ["evolution", "Évolution"]].map(([k, l]) => (
+        {[["synthese", "Synthèse"], ["evolution", "Évolution"], ["revenus", "Revenus"]].map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
             {l}
@@ -2104,6 +2104,237 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
               })}
             </div>
           )}
+        </div>
+      )}
+      {subTab === "revenus" && (
+        <RevenusSection db={db} clientId={activeClient?.id || clientId} color={color} fmt={fmt} />
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
+//  REVENUS SECTION
+// ══════════════════════════════════════
+function RevenusSection({ db, clientId, color, fmt }) {
+  const [revenus, setRevenus] = useState([]);
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState({ categorie: "", annee: new Date().getFullYear(), montant: "" });
+  const [saving, setSaving] = useState(false);
+  const CURRENT_YEAR = new Date().getFullYear();
+  const CATEGORIES_REV = ["Salaire", "Revenus fonciers", "Dividendes", "Plus-values", "Revenus indépendant", "Pension / Retraite", "Autres revenus"];
+
+  useEffect(() => { if (clientId) load(); }, [clientId]);
+
+  async function load() {
+    try {
+      const d = await db.get("revenus", `select=*&client_id=eq.${clientId}&order=annee.desc,categorie`);
+      setRevenus(d);
+    } catch(e) { console.error(e); }
+  }
+
+  async function save() {
+    if (!form.categorie || !form.montant || !form.annee) return;
+    setSaving(true);
+    try {
+      await db.post("revenus", { client_id: clientId, categorie: form.categorie, annee: parseInt(form.annee), montant: parseFloat(form.montant) });
+      await load();
+      setModal(false);
+      setForm({ categorie: "", annee: CURRENT_YEAR, montant: "" });
+    } catch(e) { alert("Erreur : " + e.message); }
+    setSaving(false);
+  }
+
+  async function del(id) {
+    try { await db.del("revenus", id); await load(); } catch(e) { alert(e.message); }
+  }
+
+  // Années distinctes
+  const annees = [...new Set(revenus.map(d => d.annee))].sort((a, b) => b - a);
+  // Catégories distinctes
+  const categories = [...new Set(revenus.map(d => d.categorie))].sort();
+  // Total par année
+  const totalParAnnee = {};
+  annees.forEach(a => { totalParAnnee[a] = revenus.filter(r => r.annee === a).reduce((s, r) => s + r.montant, 0); });
+  // Matrice catégorie x année
+  const matrix = {};
+  categories.forEach(c => { matrix[c] = {}; annees.forEach(a => { matrix[c][a] = 0; }); });
+  revenus.forEach(r => { if (!matrix[r.categorie]) matrix[r.categorie] = {}; matrix[r.categorie][r.annee] = (matrix[r.categorie][r.annee] || 0) + r.montant; });
+  // Total par catégorie
+  const totalParCat = {};
+  categories.forEach(c => { totalParCat[c] = revenus.filter(r => r.categorie === c).reduce((s, r) => s + r.montant, 0); });
+  // Total global
+  const totalGlobal = revenus.reduce((s, r) => s + r.montant, 0);
+  // Chart data
+  const chartData = [...annees].reverse().map(a => ({ annee: String(a), total: totalParAnnee[a] }));
+  // Catégorie colors
+  const catColors = ["#C9A96E","#7C9B8A","#8B7BAB","#6AAED4","#E07A7A","#5EBF7A","#E0A03A"];
+
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Suivi des revenus</div>
+
+      {/* KPIs */}
+      <div className="grid-3" style={{ marginBottom: 20 }}>
+        {[
+          { label: `Revenus ${CURRENT_YEAR}`, val: fmt(totalParAnnee[CURRENT_YEAR] || 0), color: color || "#C9A96E", bg: "#1A1712" },
+          { label: `Revenus ${CURRENT_YEAR - 1}`, val: fmt(totalParAnnee[CURRENT_YEAR - 1] || 0), color: "#E2DDD6", bg: "#0F0F11" },
+          { label: "Total saisi", val: fmt(totalGlobal), color: "#E2DDD6", bg: "#0F0F11" },
+        ].map((k, i) => (
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color + "30"}`, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Graphique + tableau côte à côte */}
+      <div className="grid-budget" style={{ marginBottom: 20 }}>
+        {/* Graphique */}
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
+          {chartData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={chartData} barSize={32}>
+                  <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                  <Bar dataKey="total" radius={[4,4,0,0]}>
+                    {chartData.map((_, i) => <Cell key={i} fill={i === chartData.length - 1 ? (color || "#C9A96E") : "#555"} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Variation YoY */}
+              {annees.length >= 2 && (() => {
+                const last = totalParAnnee[annees[0]] || 0;
+                const prev = totalParAnnee[annees[1]] || 0;
+                const diff = last - prev;
+                const pct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : 0;
+                return (
+                  <div style={{ marginTop: 12, padding: "10px 14px", background: diff >= 0 ? "#1A2F1F" : "#2F1010", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "#666" }}>vs {annees[1]}</span>
+                    <span style={{ fontSize: 13, color: diff >= 0 ? "#5EBF7A" : "#E07A7A", fontWeight: 600 }}>
+                      {diff >= 0 ? "+" : ""}{fmt(diff)} ({pct}%)
+                    </span>
+                  </div>
+                );
+              })()}
+            </>
+          ) : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
+        </div>
+
+        {/* Répartition par catégorie */}
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Répartition {annees[0] || CURRENT_YEAR}</div>
+          {categories.length === 0 ? <div style={{ color: "#444", fontSize: 12 }}>Aucune donnée</div> : (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie data={categories.map((c, i) => ({ name: c, value: matrix[c][annees[0]] || 0, color: catColors[i % catColors.length] })).filter(d => d.value > 0)}
+                    dataKey="value" innerRadius={40} outerRadius={65} paddingAngle={3}>
+                    {categories.filter(c => (matrix[c][annees[0]] || 0) > 0).map((c, i) => <Cell key={i} fill={catColors[i % catColors.length]} />)}
+                  </Pie>
+                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              {categories.filter(c => (matrix[c][annees[0]] || 0) > 0).map((c, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: catColors[i % catColors.length] }} />
+                    <span style={{ fontSize: 11, color: "#777" }}>{c}</span>
+                  </div>
+                  <span style={{ fontSize: 11, color: "#999" }}>{fmt(matrix[c][annees[0]] || 0)}</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Tableau récapitulatif */}
+      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Détail par catégorie & année</div>
+          <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: color || "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>+ Ajouter</button>
+        </div>
+
+        {revenus.length === 0 ? (
+          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun revenu enregistré.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
+                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500 }}>Catégorie</th>
+                  {annees.map(a => (
+                    <th key={a} style={{ padding: "10px 16px", textAlign: "right", fontSize: 9, color: a === CURRENT_YEAR ? (color || "#C9A96E") : "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>{a}</th>
+                  ))}
+                  <th style={{ padding: "10px 20px", textAlign: "right", fontSize: 9, color: color || "#C9A96E", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500 }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((c, ci) => (
+                  <tr key={c} style={{ borderBottom: "1px solid #1A1A1E", background: ci % 2 === 0 ? "transparent" : "#0A0A0C" }}>
+                    <td style={{ padding: "10px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: catColors[ci % catColors.length], flexShrink: 0 }} />
+                        <span style={{ color: "#CCC" }}>{c}</span>
+                      </div>
+                    </td>
+                    {annees.map(a => (
+                      <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: (matrix[c][a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[c][a] || 0) > 0 ? 500 : 400 }}>
+                        {(matrix[c][a] || 0) > 0 ? fmt(matrix[c][a]) : "—"}
+                      </td>
+                    ))}
+                    <td style={{ padding: "10px 20px", textAlign: "right", color: color || "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParCat[c])}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid #2A2A2A" }}>
+                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total</td>
+                  {annees.map(a => (
+                    <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: a === CURRENT_YEAR ? (color || "#C9A96E") : "#C9A96E", fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontWeight: 600 }}>{fmt(totalParAnnee[a])}</td>
+                  ))}
+                  <td style={{ padding: "10px 20px", textAlign: "right", color: "#5EBF7A", fontFamily: "'Cormorant Garamond',serif", fontSize: 16, fontWeight: 600 }}>{fmt(totalGlobal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+
+        {/* Détail lignes par année sélectionnée */}
+      </div>
+
+      {/* Modal ajout */}
+      {modal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 400 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouveau revenu</div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Catégorie *</div>
+              <select value={form.categorie} onChange={e => setForm(p => ({ ...p, categorie: e.target.value }))}
+                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: form.categorie ? "#CCC" : "#555", fontSize: 12, fontFamily: "inherit" }}>
+                <option value="">Sélectionner...</option>
+                {CATEGORIES_REV.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Année *</div>
+              <input type="number" value={form.annee} onChange={e => setForm(p => ({ ...p, annee: e.target.value }))}
+                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Montant annuel (€) *</div>
+              <input type="number" placeholder="Ex: 45000" value={form.montant} onChange={e => setForm(p => ({ ...p, montant: e.target.value }))}
+                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, background: color || "#C9A96E", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -2448,6 +2679,386 @@ function NotesSection({ db, clientId, auteur, color }) {
 }
 
 // ══════════════════════════════════════
+//  INFORMATIONS SECTION
+// ══════════════════════════════════════
+const INFO_DATA = {
+  epargne: {
+    label: "Produits d'épargne",
+    color: "#7C9B8A",
+    icon: "🏦",
+    items: [
+      {
+        nom: "Livret A",
+        badge: "Épargne réglementée",
+        details: [
+          { label: "Taux", val: "2,4% net (2025)" },
+          { label: "Plafond", val: "22 950 € (particulier)" },
+          { label: "Fiscalité", val: "100% exonéré d'impôt et de prélèvements sociaux" },
+          { label: "Liquidité", val: "Immédiate" },
+          { label: "Garantie", val: "Capital garanti par l'État" },
+          { label: "Qui peut ouvrir", val: "Toute personne physique résidente en France (1 par personne)" },
+        ],
+        note: "Idéal pour l'épargne de précaution. Taux révisé 2 fois par an.",
+      },
+      {
+        nom: "LDDS (Livret Développement Durable et Solidaire)",
+        badge: "Épargne réglementée",
+        details: [
+          { label: "Taux", val: "2,4% net (2025)" },
+          { label: "Plafond", val: "12 000 €" },
+          { label: "Fiscalité", val: "100% exonéré" },
+          { label: "Liquidité", val: "Immédiate" },
+          { label: "Garantie", val: "Capital garanti" },
+        ],
+        note: "Complément du Livret A. Fonds orientés vers l'économie sociale.",
+      },
+      {
+        nom: "LEP (Livret Épargne Populaire)",
+        badge: "Épargne réglementée",
+        details: [
+          { label: "Taux", val: "3,5% net (2025)" },
+          { label: "Plafond", val: "10 000 €" },
+          { label: "Fiscalité", val: "100% exonéré" },
+          { label: "Liquidité", val: "Immédiate" },
+          { label: "Conditions", val: "Sous conditions de revenus (RFR ≤ 21 393 € pour 1 part)" },
+        ],
+        note: "Meilleur taux garanti de l'épargne sans risque. À privilégier si éligible.",
+      },
+      {
+        nom: "PEL (Plan Épargne Logement)",
+        badge: "Épargne logement",
+        details: [
+          { label: "Taux", val: "2,25% brut (ouverture depuis janv. 2024)" },
+          { label: "Plafond", val: "61 200 €" },
+          { label: "Fiscalité", val: "Intérêts soumis au PFU 30% dès la 1ère année (depuis 2018)" },
+          { label: "Durée minimale", val: "4 ans (sinon pénalités)" },
+          { label: "Versement minimum", val: "540 €/an" },
+          { label: "Prime État", val: "Supprimée depuis 2018" },
+        ],
+        note: "Permet d'obtenir un prêt immobilier à taux préférentiel après 4 ans.",
+      },
+      {
+        nom: "Assurance Vie",
+        badge: "Épargne long terme",
+        details: [
+          { label: "Fonds euros", val: "~2,5 à 4% selon assureur (2024)" },
+          { label: "Plafond", val: "Aucun" },
+          { label: "Fiscalité rachats < 8 ans", val: "PFU 30% ou barème IR" },
+          { label: "Fiscalité rachats > 8 ans", val: "Abattement 4 600€/an (9 200€ couple) puis 24,7%" },
+          { label: "Succession", val: "Abattement 152 500€ par bénéficiaire hors succession" },
+          { label: "Liquidité", val: "Disponible à tout moment (rachat partiel ou total)" },
+        ],
+        note: "Enveloppe fiscale très avantageuse après 8 ans. Meilleur outil de transmission.",
+      },
+      {
+        nom: "PER (Plan Épargne Retraite)",
+        badge: "Retraite",
+        details: [
+          { label: "Versements déductibles", val: "Oui, dans la limite de 10% des revenus N-1 (max ~35 000€)" },
+          { label: "Fiscalité sortie", val: "Imposable à l'IR (capital + rentes) sauf si pas de déduction à l'entrée" },
+          { label: "Disponibilité", val: "Bloqué jusqu'à la retraite (sauf cas exceptionnels)" },
+          { label: "Supports", val: "Fonds euros + Unités de Compte" },
+          { label: "Déblocage anticipé", val: "Décès conjoint, invalidité, surendettement, achat résidence principale" },
+        ],
+        note: "Très efficace si TMI élevée. L'économie d'impôt à l'entrée peut représenter 30 à 45% de l'effort.",
+      },
+    ],
+  },
+  investissement: {
+    label: "Supports d'investissement",
+    color: "#C9A96E",
+    icon: "📈",
+    items: [
+      {
+        nom: "PEA (Plan Épargne en Actions)",
+        badge: "Actions françaises / européennes",
+        details: [
+          { label: "Plafond versements", val: "150 000 € (PEA classique)" },
+          { label: "Fiscalité < 5 ans", val: "PFU 30% sur les gains" },
+          { label: "Fiscalité > 5 ans", val: "Exonéré d'IR (17,2% PS uniquement)" },
+          { label: "Univers", val: "Actions éligibles EU, ETF éligibles" },
+          { label: "Dividendes", val: "Capitalisés sans imposition tant qu'ils restent dans l'enveloppe" },
+        ],
+        note: "La meilleure enveloppe pour investir en actions européennes sur le long terme.",
+      },
+      {
+        nom: "PEA-PME",
+        badge: "Actions PME/ETI",
+        details: [
+          { label: "Plafond versements", val: "225 000 € (cumulé avec PEA = 225 000€ max)" },
+          { label: "Fiscalité > 5 ans", val: "Identique au PEA (exonéré IR)" },
+          { label: "Univers", val: "PME et ETI françaises et européennes" },
+          { label: "Risque", val: "Plus élevé que le PEA classique (valeurs moins liquides)" },
+        ],
+        note: "Complément du PEA pour diversifier sur des valeurs de croissance plus petites.",
+      },
+      {
+        nom: "CTO (Compte Titre Ordinaire)",
+        badge: "Tous marchés",
+        details: [
+          { label: "Plafond", val: "Aucun" },
+          { label: "Fiscalité", val: "PFU 30% sur dividendes et plus-values (ou option barème IR)" },
+          { label: "Univers", val: "Actions mondiales, ETF, obligations, matières premières, options..." },
+          { label: "Liquidité", val: "Très haute" },
+        ],
+        note: "Aucune contrainte géographique ni de plafond. Moins avantageux fiscalement que le PEA.",
+      },
+      {
+        nom: "SCPI (Société Civile de Placement Immobilier)",
+        badge: "Immobilier indirect",
+        details: [
+          { label: "Rendement moyen", val: "4 à 6% brut/an" },
+          { label: "Ticket d'entrée", val: "Dès 1 000 € selon les SCPI" },
+          { label: "Fiscalité", val: "Revenus fonciers soumis à l'IR + PS (17,2%)" },
+          { label: "Liquidité", val: "Faible (marché secondaire)" },
+          { label: "Frais d'entrée", val: "8 à 12% selon les SCPI" },
+        ],
+        note: "Permet d'investir dans l'immobilier sans gestion locative directe. Horizon 8+ ans recommandé.",
+      },
+      {
+        nom: "ETF (Exchange Traded Fund)",
+        badge: "Fonds indiciel coté",
+        details: [
+          { label: "Frais", val: "0,05% à 0,5%/an (vs 1,5-2% pour fonds actifs)" },
+          { label: "Liquidité", val: "Haute (coté en bourse en temps réel)" },
+          { label: "Diversification", val: "Un seul ETF peut contenir 500+ entreprises" },
+          { label: "Exemples", val: "MSCI World, S&P 500, CAC 40, NASDAQ-100" },
+          { label: "Logeable", val: "PEA (ETF éligibles), CTO, Assurance Vie" },
+        ],
+        note: "Stratégie la plus efficiente prouvée sur long terme pour l'investisseur particulier.",
+      },
+    ],
+  },
+  sous_jacents: {
+    label: "Sous-jacents & classes d'actifs",
+    color: "#6AAED4",
+    icon: "🌐",
+    items: [
+      {
+        nom: "Actions",
+        badge: "Haute volatilité / Fort potentiel",
+        details: [
+          { label: "Rendement historique", val: "~7-10%/an (actions mondiales, long terme)" },
+          { label: "Risque", val: "Élevé à court terme, réduit sur 10+ ans" },
+          { label: "Liquidité", val: "Haute" },
+          { label: "Horizon recommandé", val: "5 ans minimum, idéalement 10+" },
+        ],
+        note: "Moteur principal de la création de richesse sur le long terme.",
+      },
+      {
+        nom: "Obligations",
+        badge: "Faible à moyenne volatilité",
+        details: [
+          { label: "Rendement actuel", val: "3 à 5% (obligations d'État Europe, 2025)" },
+          { label: "Risque", val: "Risque de taux + risque de crédit" },
+          { label: "Liquidité", val: "Bonne" },
+          { label: "Rôle", val: "Stabilisation du portefeuille, diversification" },
+        ],
+        note: "Revenu fixe. Sensibles aux variations de taux d'intérêt.",
+      },
+      {
+        nom: "Immobilier",
+        badge: "Actif réel",
+        details: [
+          { label: "Rendement locatif brut", val: "3 à 7% selon localisation" },
+          { label: "Levier", val: "Possible via crédit immobilier" },
+          { label: "Liquidité", val: "Très faible" },
+          { label: "Protection inflation", val: "Bonne (loyers indexés)" },
+        ],
+        note: "Actif tangible avec effet de levier. Contraintes de gestion et illiquidité à anticiper.",
+      },
+      {
+        nom: "Or & Matières premières",
+        badge: "Valeur refuge",
+        details: [
+          { label: "Rendement", val: "~4-5%/an sur 20 ans (or)" },
+          { label: "Rôle", val: "Protection contre l'inflation et les crises" },
+          { label: "Allocation recommandée", val: "5 à 10% du portefeuille" },
+          { label: "Accès", val: "ETF or, trackers, pièces physiques" },
+        ],
+        note: "Valeur refuge en temps de crise. Ne produit pas de revenus.",
+      },
+      {
+        nom: "Crypto-actifs",
+        badge: "Très haute volatilité",
+        details: [
+          { label: "Risque", val: "Très élevé" },
+          { label: "Fiscalité France", val: "PFU 30% sur les plus-values (depuis 2023)" },
+          { label: "Liquidité", val: "Haute (24h/24, 7j/7)" },
+          { label: "Allocation max suggérée", val: "≤ 5% du patrimoine" },
+        ],
+        note: "Classe d'actif spéculative. Ne pas y investir ce qu'on ne peut pas se permettre de perdre.",
+      },
+    ],
+  },
+  principes: {
+    label: "Grands principes d'investissement",
+    color: "#8B7BAB",
+    icon: "💡",
+    items: [
+      {
+        nom: "Couple Rendement / Risque",
+        badge: "Principe fondamental",
+        details: [
+          { label: "Règle", val: "Tout rendement supplémentaire s'accompagne d'un risque plus élevé" },
+          { label: "Implication", val: "Pas de rendement élevé sans risque — méfiance envers les promesses de rendement garanti" },
+          { label: "Application", val: "Définir son profil de risque avant d'investir (Prudent, Modéré, Dynamique...)" },
+        ],
+        note: "La diversification permet de réduire le risque sans sacrifier le rendement espéré.",
+      },
+      {
+        nom: "Liquidité",
+        badge: "Principe de précaution",
+        details: [
+          { label: "Définition", val: "Capacité à convertir un actif en cash rapidement sans perte de valeur" },
+          { label: "Règle d'or", val: "Toujours conserver 3 à 6 mois de dépenses en épargne liquide avant d'investir" },
+          { label: "Échelle", val: "Livret A (max) → Actions (haute) → Immobilier (faible) → SCPI (très faible)" },
+        ],
+        note: "Ne jamais investir en actifs illiquides de l'argent dont vous pourriez avoir besoin à court terme.",
+      },
+      {
+        nom: "DCA (Dollar Cost Averaging)",
+        badge: "Stratégie d'investissement régulier",
+        details: [
+          { label: "Principe", val: "Investir un montant fixe à intervalles réguliers (ex: 200€/mois)" },
+          { label: "Avantage", val: "Lisse le prix d'achat moyen — on achète plus quand les marchés baissent" },
+          { label: "Psychologie", val: "Élimine le stress de chercher le 'bon moment' pour investir" },
+          { label: "Idéal pour", val: "ETF, actions, sur PEA ou CTO" },
+        ],
+        note: "Stratégie recommandée pour les investisseurs qui ne peuvent pas ou ne veulent pas timer le marché.",
+      },
+      {
+        nom: "Lump Sum (Investissement en une fois)",
+        badge: "Stratégie d'investissement global",
+        details: [
+          { label: "Principe", val: "Investir un capital important en une seule fois" },
+          { label: "Performance", val: "Statistiquement supérieure au DCA dans ~65% des cas sur marchés haussiers" },
+          { label: "Risque", val: "Exposition immédiate à la volatilité court terme" },
+          { label: "Idéal pour", val: "Héritage, prime, vente d'actif — quand l'horizon est long (10+ ans)" },
+        ],
+        note: "Si vous avez un capital disponible et un horizon long, le lump sum est souvent plus performant. La peur de 'mal timer' coûte souvent plus cher que le mauvais timing lui-même.",
+      },
+      {
+        nom: "Diversification",
+        badge: "Gestion du risque",
+        details: [
+          { label: "Géographique", val: "Monde entier (Europe, USA, Émergents)" },
+          { label: "Sectorielle", val: "Technologie, santé, finance, énergie, consommation..." },
+          { label: "Par classes d'actifs", val: "Actions, obligations, immobilier, or" },
+          { label: "Temporelle", val: "Investissements étalés dans le temps (DCA)" },
+        ],
+        note: ""Ne pas mettre tous ses œufs dans le même panier." Un ETF MSCI World offre une diversification sur 1 500+ entreprises en un seul produit.",
+      },
+      {
+        nom: "Intérêts composés",
+        badge: "La 8e merveille du monde",
+        details: [
+          { label: "Principe", val: "Les intérêts génèrent eux-mêmes des intérêts" },
+          { label: "Exemple", val: "10 000€ à 7%/an → 19 672€ après 10 ans, 76 123€ après 30 ans" },
+          { label: "Clé", val: "Le temps est le facteur le plus important — commencer tôt prime sur le montant investi" },
+          { label: "Règle des 72", val: "Divisez 72 par le taux → nombre d'années pour doubler le capital (72/7% = ~10 ans)" },
+        ],
+        note: "Albert Einstein aurait dit : "Les intérêts composés sont la 8e merveille du monde. Celui qui les comprend les gagne, celui qui ne les comprend pas les paie."",
+      },
+    ],
+  },
+};
+
+function InformationsSection() {
+  const [activeCategory, setActiveCategory] = useState("epargne");
+  const [openItem, setOpenItem] = useState(null);
+
+  const cat = INFO_DATA[activeCategory];
+  const catKeys = Object.keys(INFO_DATA);
+
+  return (
+    <div>
+      <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 6 }}>Centre d'informations financières</div>
+      <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>
+        Sources : Banque de France, AMF, impots.gouv.fr, BPCE, Crédit Agricole, JustETF, MoneyVox, Meilleure Banque
+      </div>
+
+      {/* Category tabs */}
+      <div className="tabs-row" style={{ borderBottom: "1px solid #1A1A1E", marginBottom: 24 }}>
+        {catKeys.map(k => {
+          const c = INFO_DATA[k];
+          return (
+            <button key={k} onClick={() => { setActiveCategory(k); setOpenItem(null); }}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: activeCategory === k ? c.color : "#555", borderBottom: activeCategory === k ? `2px solid ${c.color}` : "2px solid transparent", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              {c.icon} {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Items */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {cat.items.map((item, i) => {
+          const isOpen = openItem === i;
+          return (
+            <div key={i} style={{ background: "#0F0F11", border: `1px solid ${isOpen ? cat.color + "40" : "#1A1A1E"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s" }}>
+              {/* Header */}
+              <div onClick={() => setOpenItem(isOpen ? null : i)}
+                style={{ padding: "16px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: "#E2DDD6", marginBottom: 3 }}>{item.nom}</div>
+                    <span style={{ padding: "2px 8px", background: `${cat.color}15`, border: `1px solid ${cat.color}30`, borderRadius: 20, fontSize: 10, color: cat.color }}>{item.badge}</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: 16, color: "#555", transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</div>
+              </div>
+
+              {/* Details */}
+              {isOpen && (
+                <div style={{ padding: "0 20px 20px" }}>
+                  <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 16, marginBottom: 14 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                      <tbody>
+                        {item.details.map((d, di) => (
+                          <tr key={di} style={{ borderBottom: "1px solid #1A1A1E" }}>
+                            <td style={{ padding: "8px 16px 8px 0", fontSize: 11, color: "#666", width: "35%", verticalAlign: "top" }}>{d.label}</td>
+                            <td style={{ padding: "8px 0", fontSize: 12, color: "#E2DDD6", fontWeight: 500 }}>{d.val}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {item.note && (
+                    <div style={{ background: `${cat.color}10`, border: `1px solid ${cat.color}25`, borderRadius: 8, padding: "10px 14px", display: "flex", gap: 10 }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
+                      <span style={{ fontSize: 12, color: "#AAA", lineHeight: 1.6 }}>{item.note}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Sources footer */}
+      <div style={{ marginTop: 24, padding: "14px 20px", background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12 }}>
+        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>Sources & références</div>
+        <div style={{ fontSize: 11, color: "#555", lineHeight: 1.8 }}>
+          • <span style={{ color: "#666" }}>Banque de France</span> — banque-france.fr (taux réglementés)<br/>
+          • <span style={{ color: "#666" }}>AMF (Autorité des Marchés Financiers)</span> — amf-france.org (réglementation, éducation financière)<br/>
+          • <span style={{ color: "#666" }}>Direction Générale des Finances Publiques</span> — impots.gouv.fr (fiscalité de l'épargne)<br/>
+          • <span style={{ color: "#666" }}>MoneyVox</span> — moneyvox.fr (comparatifs produits épargne)<br/>
+          • <span style={{ color: "#666" }}>JustETF</span> — justetf.com (données ETF)<br/>
+          • <span style={{ color: "#666" }}>IEIF</span> — ieif.fr (données immobilier et SCPI)<br/>
+          • <span style={{ color: "#666" }}>Vanguard Research</span> — "Dollar Cost Averaging Just Means Taking Risk Later" (2012)
+        </div>
+        <div style={{ fontSize: 10, color: "#444", marginTop: 10, fontStyle: "italic" }}>
+          ⚠️ Ces informations sont fournies à titre indicatif et éducatif. Elles ne constituent pas un conseil en investissement. Consultez un conseiller financier agréé pour votre situation personnelle. Taux et plafonds susceptibles d'évoluer.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
 function AdminApp({ db, onLogout }) {
@@ -2686,7 +3297,7 @@ function AdminApp({ db, onLogout }) {
                     onAddProduit={()=>openModal("produit_new")}
                     onAddAvoir={(prod)=>openModal("avoir_new",{produit_id:prod.id,produit_nom:prod.nom})}
                     onDelProduit={delProduit}
-                    isAdmin={true}
+                    isAdmin={true} db={db} clientId={activeClient?.id}
                   />
                 )}
                 {tab==="synthese_OLD"&&(
@@ -2813,6 +3424,7 @@ function AdminApp({ db, onLogout }) {
                 {tab==="identification"&&<IdentificationSection db={db} clientId={activeClient.id} isReadOnly={false}/>}
 
                 {tab==="notes"&&<NotesSection db={db} clientId={activeClient.id} auteur="admin" color={color}/>}
+                {tab==="informations"&&<InformationsSection/>}
               </div>
             </>
           );
@@ -3033,7 +3645,7 @@ function ClientApp({ db, userId, onLogout }) {
             onAddProduit={()=>openModal("produit_new")}
             onAddAvoir={(prod)=>openModal("avoir_new",{produit_id:prod.id,produit_nom:prod.nom})}
             onDelProduit={delProduit}
-            isAdmin={false}
+            isAdmin={false} db={db} clientId={client?.id}
           />
         )}
         {tab==="synthese_OLD"&&(
@@ -3152,6 +3764,7 @@ function ClientApp({ db, userId, onLogout }) {
         {tab==="dividendes"&&<DividendesSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="notes"&&<NotesSection db={db} clientId={client.id} auteur="client" color={color}/>}
+        {tab==="informations"&&<InformationsSection/>}
       </div>
 
       {/* MODALS CLIENT */}
