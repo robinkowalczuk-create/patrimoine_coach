@@ -2947,7 +2947,7 @@ const INFO_DATA = {
           { label: "Par classes d'actifs", val: "Actions, obligations, immobilier, or" },
           { label: "Temporelle", val: "Investissements étalés dans le temps (DCA)" },
         ],
-        note: ""Ne pas mettre tous ses œufs dans le même panier." Un ETF MSCI World offre une diversification sur 1 500+ entreprises en un seul produit.",
+        note: "Ne pas mettre tous ses oeufs dans le même panier. Un ETF MSCI World offre une diversification sur 1 500+ entreprises en un seul produit.",
       },
       {
         nom: "Intérêts composés",
@@ -2958,7 +2958,7 @@ const INFO_DATA = {
           { label: "Clé", val: "Le temps est le facteur le plus important — commencer tôt prime sur le montant investi" },
           { label: "Règle des 72", val: "Divisez 72 par le taux → nombre d'années pour doubler le capital (72/7% = ~10 ans)" },
         ],
-        note: "Albert Einstein aurait dit : "Les intérêts composés sont la 8e merveille du monde. Celui qui les comprend les gagne, celui qui ne les comprend pas les paie."",
+        note: "Albert Einstein : Les intérêts composés sont la 8e merveille du monde. Celui qui les comprend les gagne, celui qui ne les comprend pas les paie.",
       },
     ],
   },
