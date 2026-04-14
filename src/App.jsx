@@ -3,7 +3,6 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
-import { Analytics } from '@vercel/analytics/react';
 
 const SB_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhYWdvenNiamp3em5yYnV5dHZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMjcxNzUsImV4cCI6MjA5MDcwMzE3NX0.WWQeWjDEq6r3HgSYRAtE8eXk34YQYXc5UZ07cvR_b1I";
@@ -32,9 +31,10 @@ const auth = {
   },
 };
 
-const sb = (token) => ({
+const sb = (token, onUnauthorized) => ({
   get: async (table, query = "") => {
     const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, { headers: authHeaders(token) });
+    if (r.status === 401) { onUnauthorized?.(); return []; }
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
@@ -43,6 +43,7 @@ const sb = (token) => ({
       method: "POST", headers: { ...authHeaders(token), "Prefer": "return=representation" },
       body: JSON.stringify(body),
     });
+    if (r.status === 401) { onUnauthorized?.(); throw new Error("Session expirée"); }
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
@@ -51,6 +52,7 @@ const sb = (token) => ({
       method: "PATCH", headers: { ...authHeaders(token), "Prefer": "return=representation" },
       body: JSON.stringify(body),
     });
+    if (r.status === 401) { onUnauthorized?.(); throw new Error("Session expirée"); }
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
@@ -58,6 +60,7 @@ const sb = (token) => ({
     const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: "DELETE", headers: authHeaders(token),
     });
+    if (r.status === 401) { onUnauthorized?.(); throw new Error("Session expirée"); }
     if (!r.ok) throw new Error(await r.text());
   },
 });
@@ -198,31 +201,56 @@ export default function App() {
     setIsAdmin((s.user?.email || "") === ADMIN_EMAIL);
     localStorage.setItem("rb_session", JSON.stringify(s));
   }
-  async function handleLogout() {
-    if (session?.access_token) await auth.logout(session.access_token);
+
+  function handleLogout() {
     setSession(null); setIsAdmin(false);
     localStorage.removeItem("rb_session");
   }
+
+  // Vérifier si la session est encore valide
+  function isSessionValid(s) {
+    if (!s?.access_token || !s?.expires_at) return false;
+    // expires_at est en secondes Unix
+    const expiresAt = s.expires_at * 1000;
+    return Date.now() < expiresAt;
+  }
+
   useEffect(() => {
     const saved = localStorage.getItem("rb_session");
-    if (saved) { try { const s = JSON.parse(saved); setSession(s); setIsAdmin((s.user?.email||"")===ADMIN_EMAIL); } catch {} }
+    if (saved) {
+      try {
+        const s = JSON.parse(saved);
+        if (isSessionValid(s)) {
+          setSession(s);
+          setIsAdmin((s.user?.email || "") === ADMIN_EMAIL);
+        } else {
+          // Session expirée → nettoyer et afficher le login
+          localStorage.removeItem("rb_session");
+        }
+      } catch {
+        localStorage.removeItem("rb_session");
+      }
+    }
   }, []);
 
-  if (!session) return (
-    <>
-      <LoginPage onLogin={handleLogin} />
-      <Analytics />
-    </>
-  );
-  const db = sb(session.access_token);
-  return (
-    <>
-      {isAdmin
-        ? <AdminApp db={db} session={session} onLogout={handleLogout} />
-        : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} />}
-      <Analytics />
-    </>
-  );
+  // Vérifier périodiquement si la session a expiré (toutes les minutes)
+  useEffect(() => {
+    if (!session) return;
+    const interval = setInterval(() => {
+      if (!isSessionValid(session)) {
+        handleLogout();
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [session]);
+
+  // Intercepter les erreurs 401 pour déconnecter automatiquement
+  const db = session ? sb(session.access_token, handleLogout) : null;
+
+  if (!session) return <LoginPage onLogin={handleLogin} />;
+  return isAdmin
+    ? <AdminApp db={db} session={session} onLogout={handleLogout} />
+    : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} />;
 }
 
 // ══════════════════════════════════════
@@ -3473,7 +3501,7 @@ function AdminApp({ db, onLogout }) {
       })}
     </div>
   </div>
-</>}
+</>}}
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
             {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Retraite anticipée")}{inp("montant_cible","Montant cible (€) *","number","300000")}{inp("description","Description","text","Partir à 55 ans")}</>}
