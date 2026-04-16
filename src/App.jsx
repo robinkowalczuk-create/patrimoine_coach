@@ -76,7 +76,7 @@ const statutStyle = {
 };
 
 const fmt = n => new Intl.NumberFormat(“fr-FR”, { style: “currency”, currency: “EUR”, maximumFractionDigits: 0 }).format(n || 0);
-const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”, { day: “numeric”, month: “short”, year: “numeric” }) : “—”;
+const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”, { day: “numeric”, month: “short”, year: “numeric” }) : “–”;
 const initials = n => n ? n.split(” “).map(w => w[0]).join(””).toUpperCase().slice(0, 2) : “?”;
 const pct = (a, b) => b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0;
 
@@ -386,7 +386,7 @@ Budget {t === “actuel” ? “actuel” : “cible”}
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200 }}>
       <div style={{ background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:360 }}>
         <div style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20 }}>
-          Ajouter — {sectionLabel[modal.categorie]}
+          Ajouter -- {sectionLabel[modal.categorie]}
         </div>
         <div style={{ marginBottom:14 }}>
           <div style={{ fontSize:10,color:"#555",marginBottom:5 }}>Libellé *</div>
@@ -611,9 +611,9 @@ return (
             <div style={{ fontSize: 11, color: "#C9A96E", fontWeight: 600 }}>{a.ticker}</div>
             <div style={{ fontSize: 12, color: "#CCC" }}>{a.nombre}</div>
             <div style={{ fontSize: 12, color: "#CCC" }}>{fmt(a.prix_achat)}</div>
-            <div style={{ fontSize: 12, color: prixActuel ? "#E2DDD6" : "#555" }}>{prixActuel ? fmt(prixActuel) : "—"}{q && <span style={{ fontSize: 9, color: pvColor(q.change), marginLeft: 4 }}>{fmtPct(q.change)}</span>}</div>
-            <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "—"}</div>
-            <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "—"}</div>
+            <div style={{ fontSize: 12, color: prixActuel ? "#E2DDD6" : "#555" }}>{prixActuel ? fmt(prixActuel) : "--"}{q && <span style={{ fontSize: 9, color: pvColor(q.change), marginLeft: 4 }}>{fmtPct(q.change)}</span>}</div>
+            <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "--"}</div>
+            <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "--"}</div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               {!isReadOnly && <>
                 <button onClick={() => openEdit(a)} style={{ padding: "3px 8px", background: "#1A1A1E", border: "1px solid #2A2A2A", borderRadius: 5, cursor: "pointer", color: "#888", fontSize: 10 }}>✏️</button>
@@ -631,13 +631,13 @@ return (
                   <div style={{ fontSize: 10, color: "#C9A96E" }}>{a.ticker} · {a.nombre} actions</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: prixActuel ? "#E2DDD6" : "#555" }}>{valeur ? fmt(valeur) : "—"}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: prixActuel ? "#E2DDD6" : "#555" }}>{valeur ? fmt(valeur) : "--"}</div>
                   {pv !== null && <div style={{ fontSize: 11, color: col }}>{fmt(pv)} ({fmtPct(pvPct)})</div>}
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555" }}>
                 <span>Px achat : {fmt(a.prix_achat)}</span>
-                <span>Px actuel : {prixActuel ? fmt(prixActuel) : "—"}</span>
+                <span>Px actuel : {prixActuel ? fmt(prixActuel) : "--"}</span>
 
               </div>
             </div>
@@ -1177,7 +1177,7 @@ return (
                       <td style={{ padding: "9px 20px 9px 30px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
                       {annees.map(a => (
                         <td key={a} style={{ padding: "9px 16px", textAlign: "right", color: (matrix[e]?.[a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[e]?.[a] || 0) > 0 ? 500 : 400 }}>
-                          {(matrix[e]?.[a] || 0) > 0 ? fmt(matrix[e][a]) : "—"}
+                          {(matrix[e]?.[a] || 0) > 0 ? fmt(matrix[e][a]) : "--"}
                         </td>
                       ))}
                       <td style={{ padding: "9px 20px", textAlign: "right", color: "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParEntreprise[e])}</td>
@@ -1188,7 +1188,7 @@ return (
                     <td style={{ padding: "8px 20px", fontSize: 11, color: "#8B7BAB", fontWeight: 600 }}>Sous-total {support}</td>
                     {annees.map(a => (
                       <td key={a} style={{ padding: "8px 16px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontWeight: 600 }}>
-                        {totalParSupportAnnee[support]?.[a] > 0 ? fmt(totalParSupportAnnee[support][a]) : "—"}
+                        {totalParSupportAnnee[support]?.[a] > 0 ? fmt(totalParSupportAnnee[support][a]) : "--"}
                       </td>
                     ))}
                     <td style={{ padding: "8px 20px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 15, fontWeight: 600 }}>{fmt(totalParSupport[support])}</td>
@@ -1867,7 +1867,7 @@ actif: qi_final > t.min,
 return (
 <div>
 <div style={{ fontFamily: “‘Cormorant Garamond’,serif”, fontSize: 20, marginBottom: 6 }}>Estimation impôt sur le revenu</div>
-<div style={{ fontSize: 11, color: “#555”, marginBottom: 20 }}>⚠️ Estimation indicative — barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
+<div style={{ fontSize: 11, color: “#555”, marginBottom: 20 }}>⚠️ Estimation indicative – barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
 
 ```
   {/* KPIs */}
@@ -1967,7 +1967,7 @@ return (
 
   {/* Barème visuel */}
   <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-    <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2025 — votre position</div>
+    <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2025 -- votre position</div>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       {BAREME.map((t, i) => (
         <div key={i} style={{
@@ -2071,7 +2071,7 @@ style={{ background: “none”, border: “none”, cursor: “pointer”, padd
                         {last && <span style={{ fontSize: 10, color: "#555" }}>· {fmtDate(last.date)}</span>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500 }}>{last ? fmt(last.montant) : "—"}</span>
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{last ? fmt(last.montant) : "--"}</span>
                         <button onClick={() => onAddAvoir(p)} style={{ padding: "3px 8px", background: `${color}20`, border: `1px solid ${color}40`, borderRadius: 5, cursor: "pointer", color, fontSize: 10 }}>+ Avoir</button>
                         <button onClick={() => onDelProduit(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#E07A7A", fontSize: 11 }}>✕</button>
                       </div>
@@ -2313,7 +2313,7 @@ return (
                 </td>
                 {annees.map(a => (
                   <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: (matrix[c][a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[c][a] || 0) > 0 ? 500 : 400 }}>
-                    {(matrix[c][a] || 0) > 0 ? fmt(matrix[c][a]) : "—"}
+                    {(matrix[c][a] || 0) > 0 ? fmt(matrix[c][a]) : "--"}
                   </td>
                 ))}
                 <td style={{ padding: "10px 20px", textAlign: "right", color: color || "#C9A96E", fontWeight: 600, fontFamily: "'Cormorant Garamond',serif", fontSize: 14 }}>{fmt(totalParCat[c])}</td>
@@ -2418,7 +2418,7 @@ const [form, setForm] = useState({});
 const [saving, setSaving] = useState(false);
 const TYPES = [“Résidence principale”, “Résidence secondaire”, “Locatif”, “Terrain”, “Parking”, “Autre”];
 const fmt = n => new Intl.NumberFormat(“fr-FR”, { style: “currency”, currency: “EUR”, maximumFractionDigits: 0 }).format(n || 0);
-const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”) : “—”;
+const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”) : “–”;
 
 useEffect(() => { if (clientId) loadBiens(); }, [clientId]);
 
@@ -2674,7 +2674,7 @@ if (auteur !== “admin”) return; // seul l’admin peut supprimer
 try { await db.del(“notes”, id); await loadNotes(); } catch(e) { alert(e.message); }
 }
 
-const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”, { day: “numeric”, month: “long”, year: “numeric”, hour: “2-digit”, minute: “2-digit” }) : “—”;
+const fmtDate = d => d ? new Date(d).toLocaleDateString(“fr-FR”, { day: “numeric”, month: “long”, year: “numeric”, hour: “2-digit”, minute: “2-digit” }) : “–”;
 
 return (
 <div>
@@ -2798,7 +2798,7 @@ badge: “Actions françaises / européennes”,
 details: [
 { label: “Plafond versements”, val: “150 000 € (PEA classique)” },
 { label: “Fiscalité < 5 ans”, val: “PFU 30% sur les gains” },
-{ label: “Fiscalité > 5 ans”, val: “Exonéré d’IR — 17,2% PS uniquement” },
+{ label: “Fiscalité > 5 ans”, val: “Exonéré d’IR – 17,2% PS uniquement” },
 { label: “Univers”, val: “Actions éligibles UE, ETF éligibles” },
 { label: “Dividendes”, val: “Capitalisés sans imposition dans l’enveloppe” },
 ],
@@ -2885,7 +2885,7 @@ nom: “Monétaire”,
 badge: “Très faible risque”,
 details: [
 { label: “Rendement actuel”, val: “~3,5% (fonds monétaires €, 2025)” },
-{ label: “Risque”, val: “Très faible — proche du taux directeur BCE” },
+{ label: “Risque”, val: “Très faible – proche du taux directeur BCE” },
 { label: “Liquidité”, val: “Très haute” },
 { label: “Instruments”, val: “Bons du Trésor, billets de trésorerie, dépôts court terme” },
 { label: “Horizon”, val: “Court terme (< 1 an)” },
@@ -2981,7 +2981,7 @@ nom: “DCA (Dollar Cost Averaging)”,
 badge: “Stratégie d’investissement régulier”,
 details: [
 { label: “Principe”, val: “Investir un montant fixe à intervalles réguliers (ex: 200€/mois)” },
-{ label: “Avantage”, val: “Lisse le prix d’achat moyen — on achète plus quand les marchés baissent” },
+{ label: “Avantage”, val: “Lisse le prix d’achat moyen – on achète plus quand les marchés baissent” },
 { label: “Psychologie”, val: “Elimine le stress de chercher le bon moment pour investir” },
 { label: “Idéal pour”, val: “ETF, actions, sur PEA ou CTO” },
 ],
@@ -2994,7 +2994,7 @@ details: [
 { label: “Principe”, val: “Investir un capital important en une seule fois” },
 { label: “Performance”, val: “Statistiquement supérieure au DCA dans ~65% des cas sur marchés haussiers” },
 { label: “Risque”, val: “Exposition immédiate à la volatilité court terme” },
-{ label: “Idéal pour”, val: “Héritage, prime, vente d’actif — quand l’horizon est long (10+ ans)” },
+{ label: “Idéal pour”, val: “Héritage, prime, vente d’actif – quand l’horizon est long (10+ ans)” },
 ],
 note: “Si vous avez un capital disponible et un horizon long, le lump sum est souvent plus performant. La peur de mal timer coûte souvent plus cher que le mauvais timing lui-même.”,
 },
@@ -3015,7 +3015,7 @@ badge: “La 8e merveille du monde”,
 details: [
 { label: “Principe”, val: “Les intérêts génèrent eux-mêmes des intérêts” },
 { label: “Exemple”, val: “10 000 à 7%/an = 19 672 apres 10 ans, 76 123 apres 30 ans” },
-{ label: “Clé”, val: “Le temps est le facteur le plus important — commencer tôt prime sur le montant investi” },
+{ label: “Clé”, val: “Le temps est le facteur le plus important – commencer tôt prime sur le montant investi” },
 { label: “Règle des 72”, val: “Divisez 72 par le taux = nombre d’années pour doubler le capital (72/7% = ~10 ans)” },
 ],
 note: “Albert Einstein : Les intérêts composés sont la 8e merveille du monde. Celui qui les comprend les gagne, celui qui ne les comprend pas les paie.”,
@@ -3103,13 +3103,13 @@ Sources : Banque de France, AMF, impots.gouv.fr, BPCE, Crédit Agricole, JustETF
   <div style={{ marginTop: 24, padding: "14px 20px", background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12 }}>
     <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>Sources & références</div>
     <div style={{ fontSize: 11, color: "#555", lineHeight: 1.8 }}>
-      • <span style={{ color: "#666" }}>Banque de France</span> — banque-france.fr (taux réglementés)<br/>
-      • <span style={{ color: "#666" }}>AMF (Autorité des Marchés Financiers)</span> — amf-france.org (réglementation, éducation financière)<br/>
-      • <span style={{ color: "#666" }}>Direction Générale des Finances Publiques</span> — impots.gouv.fr (fiscalité de l'épargne)<br/>
-      • <span style={{ color: "#666" }}>MoneyVox</span> — moneyvox.fr (comparatifs produits épargne)<br/>
-      • <span style={{ color: "#666" }}>JustETF</span> — justetf.com (données ETF)<br/>
-      • <span style={{ color: "#666" }}>IEIF</span> — ieif.fr (données immobilier et SCPI)<br/>
-      • <span style={{ color: "#666" }}>Vanguard Research</span> — "Dollar Cost Averaging Just Means Taking Risk Later" (2012)
+      • <span style={{ color: "#666" }}>Banque de France</span> -- banque-france.fr (taux réglementés)<br/>
+      • <span style={{ color: "#666" }}>AMF (Autorité des Marchés Financiers)</span> -- amf-france.org (réglementation, éducation financière)<br/>
+      • <span style={{ color: "#666" }}>Direction Générale des Finances Publiques</span> -- impots.gouv.fr (fiscalité de l'épargne)<br/>
+      • <span style={{ color: "#666" }}>MoneyVox</span> -- moneyvox.fr (comparatifs produits épargne)<br/>
+      • <span style={{ color: "#666" }}>JustETF</span> -- justetf.com (données ETF)<br/>
+      • <span style={{ color: "#666" }}>IEIF</span> -- ieif.fr (données immobilier et SCPI)<br/>
+      • <span style={{ color: "#666" }}>Vanguard Research</span> -- "Dollar Cost Averaging Just Means Taking Risk Later" (2012)
     </div>
     <div style={{ fontSize: 10, color: "#444", marginTop: 10, fontStyle: "italic" }}>
       ⚠️ Ces informations sont fournies à titre indicatif et éducatif. Elles ne constituent pas un conseil en investissement. Consultez un conseiller financier agréé pour votre situation personnelle. Taux et plafonds susceptibles d'évoluer.
@@ -3395,7 +3395,7 @@ return (
                           <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"#141416",borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
                             <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:"#CCC"}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:"#555"}}>· {fmtDate(last.date)}</span>}</div>
                             <div style={{display:"flex",alignItems:"center",gap:8}}>
-                              <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"—"}</span>
+                              <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
                               <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
                               <button onClick={()=>delProduit(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#E07A7A",fontSize:11}}>✕</button>
                             </div>
@@ -3440,7 +3440,7 @@ return (
                               <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                             </div>
                             {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
-                              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} — {fmt(lastAvoir(p.id))}</div>)}</div>}
+                              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                           </div>
                           <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}><span>{fmt(patObj)} liés</span><span style={{color:ocol}}>{prog}%</span></div>
                           <div style={{background:"#1A1A1E",borderRadius:3,height:5}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
@@ -3495,7 +3495,7 @@ return (
   {modal&&(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
       <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
         {(modal.type==="client_new"||modal.type==="client_edit")&&<>
 ```
 
@@ -3743,7 +3743,7 @@ return (
                   <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"#141416",borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
                     <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:"#CCC"}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:"#555"}}>· {fmtDate(last.date)}</span>}</div>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"—"}</span>
+                      <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
                       <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
                       <button onClick={()=>delProduit(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#E07A7A",fontSize:11}}>✕</button>
                     </div>
@@ -3788,7 +3788,7 @@ return (
                       <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                     </div>
                     {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} — {fmt(lastAvoir(p.id))}</div>)}</div>}
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}><span>{fmt(patObj)} accumulés</span><span style={{color:ocol,fontWeight:600}}>{prog}%</span></div>
                   <div style={{background:"#1A1A1E",borderRadius:3,height:6}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
@@ -3836,7 +3836,7 @@ return (
   {modal&&(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
       <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
-        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir — ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
         {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
         {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
         {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Mon objectif")}{inp("montant_cible","Montant cible (€) *","number","50000")}{inp("description","Description","text","Description de mon objectif")}</>}
