@@ -1139,7 +1139,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
             <BarChart data={chartData} barSize={36}>
               <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
-              <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+              <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
               <Bar dataKey="total" fill="#5EBF7A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -1434,7 +1434,7 @@ function SimulateurSection({ patrimoineActuel }) {
             <Tooltip formatter={(v, name) => {
               const labels = { pessimiste: "Pessimiste", realiste: "Réaliste", optimiste: "Optimiste", supp_pessimiste: "Pessimiste +épargne", supp_realiste: "Réaliste +épargne", supp_optimiste: "Optimiste +épargne" };
               return [fmtK(v), labels[name] || name];
-            }} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+            }} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
             <Line type="monotone" dataKey="pessimiste" stroke="#E07A7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
             <Line type="monotone" dataKey="realiste" stroke="#C9A96E" strokeWidth={2.5} dot={false} />
             <Line type="monotone" dataKey="optimiste" stroke="#5EBF7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
@@ -2049,7 +2049,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
               {parCategorie.length > 0 ? <>
                 <ResponsiveContainer width="100%" height={140}>
                   <PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie>
-                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
                   </PieChart>
                 </ResponsiveContainer>
                 {parCategorie.map((c, i) => (
@@ -2110,7 +2110,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
                     <defs><linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.25} /><stop offset="95%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
                     <XAxis dataKey="date" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11 }} />
+                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
                     <Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad2)" dot={{ fill: color, r: 3 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -2738,6 +2738,20 @@ const INFO_DATA = {
     icon: "Ἶ6",
     items: [
       {
+        nom: "Livret Jeune",
+        badge: "Épargne réglementée — Jeunes",
+        details: [
+          { label: "Taux", val: "Minimum 2,4% net — souvent supérieur selon la banque (2025)" },
+          { label: "Plafond", val: "1 600 €" },
+          { label: "Conditions", val: "Réservé aux 12-25 ans résidant en France" },
+          { label: "Fiscalité", val: "100% exonéré d'impôt et de prélèvements sociaux" },
+          { label: "Liquidité", val: "Immédiate" },
+          { label: "Garantie", val: "Capital garanti" },
+          { label: "Fermeture", val: "Automatique au 25e anniversaire" },
+        ],
+        note: "Taux au moins égal au Livret A, souvent supérieur selon les banques. À ouvrir en priorité si vous avez entre 12 et 25 ans — il se cumule avec le Livret A.",
+      },
+      {
         nom: "Livret A",
         badge: "Épargne réglementée",
         details: [
@@ -3060,7 +3074,7 @@ function InformationsSection() {
           return (
             <button key={k} onClick={() => { setActiveCategory(k); setOpenItem(null); }}
               style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: activeCategory === k ? c.color : "#555", borderBottom: activeCategory === k ? `2px solid ${c.color}` : "2px solid transparent", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-              {c.icon} {c.label}
+              {c.label}
             </button>
           );
         })}
@@ -3112,6 +3126,102 @@ function InformationsSection() {
           );
         })}
       </div>
+
+      {/* Graphique Rendement / Risque */}
+      {activeCategory === "principes" && (
+        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 24, marginBottom: 10 }}>
+          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Carte Rendement / Risque / Liquidité</div>
+          <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>Positionnement indicatif des principales classes d'actifs</div>
+
+          {/* Legend liquidité */}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+            {[
+              { label: "Liquidité immédiate", color: "#5EBF7A" },
+              { label: "Liquidité haute", color: "#6AAED4" },
+              { label: "Liquidité moyenne", color: "#C9A96E" },
+              { label: "Liquidité faible", color: "#E07A7A" },
+            ].map((l, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: l.color, border: `2px solid ${l.color}` }} />
+                <span style={{ fontSize: 10, color: "#666" }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Chart area */}
+          <div style={{ position: "relative", height: 380, background: "#0A0A0C", borderRadius: 10, border: "1px solid #1A1A1E", overflow: "hidden" }}>
+
+            {/* Grid lines */}
+            {[0,25,50,75,100].map(v => (
+              <div key={v} style={{ position: "absolute", left: "8%", right: "4%", top: `${4 + (100-v) * 0.88}%`, height: 1, background: "#1A1A1E" }}>
+                <span style={{ position: "absolute", left: -28, top: -8, fontSize: 9, color: "#333" }}>{v}%</span>
+              </div>
+            ))}
+            {[0,25,50,75,100].map(v => (
+              <div key={v} style={{ position: "absolute", top: "4%", bottom: "12%", left: `${8 + v * 0.88}%`, width: 1, background: "#1A1A1E" }}>
+                <span style={{ position: "absolute", bottom: -18, left: -8, fontSize: 9, color: "#333" }}>{v}%</span>
+              </div>
+            ))}
+
+            {/* Axis labels */}
+            <div style={{ position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: "#555", letterSpacing: "0.1em", textTransform: "uppercase" }}>Risque →</div>
+            <div style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%) rotate(-90deg)", fontSize: 10, color: "#555", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>← Rendement</div>
+
+            {/* Efficient frontier curve (decorative) */}
+            <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+              <path d={`M ${8+2*0.88}% ${4+(100-2)*0.88}% Q ${8+30*0.88}% ${4+(100-25)*0.88}% ${8+55*0.88}% ${4+(100-55)*0.88}% T ${8+90*0.88}% ${4+(100-85)*0.88}%`}
+                stroke="#C9A96E" strokeWidth="1" strokeDasharray="4 4" fill="none" opacity="0.3" />
+            </svg>
+
+            {/* Data points */}
+            {[
+              { label: "Livret A", x: 2, y: 2.4, color: "#5EBF7A", size: 10 },
+              { label: "Livret Jeune", x: 2, y: 3.5, color: "#5EBF7A", size: 10 },
+              { label: "LEP", x: 2, y: 3.5, color: "#5EBF7A", size: 10 },
+              { label: "DAT", x: 5, y: 4, color: "#C9A96E", size: 10 },
+              { label: "PEL", x: 6, y: 1.75, color: "#C9A96E", size: 10 },
+              { label: "Monétaire", x: 8, y: 3.5, color: "#5EBF7A", size: 10 },
+              { label: "Fonds €", x: 10, y: 3, color: "#6AAED4", size: 11 },
+              { label: "Obligations", x: 25, y: 4, color: "#6AAED4", size: 11 },
+              { label: "SCPI", x: 40, y: 5, color: "#E07A7A", size: 12 },
+              { label: "Or", x: 45, y: 5, color: "#C9A96E", size: 11 },
+              { label: "Immobilier", x: 42, y: 6, color: "#E07A7A", size: 12 },
+              { label: "ETF World", x: 55, y: 8, color: "#6AAED4", size: 13 },
+              { label: "Actions", x: 65, y: 9, color: "#6AAED4", size: 13 },
+              { label: "Private Equity", x: 75, y: 14, color: "#E07A7A", size: 12 },
+              { label: "Crypto", x: 90, y: 20, color: "#E07A7A", size: 11 },
+            ].map((pt, i) => {
+              // Scale: x=risk 0-100%, y=rendement 0-25%
+              const left = `${8 + pt.x * 0.88}%`;
+              const top = `${4 + (100 - (pt.y / 25 * 100)) * 0.88}%`;
+              return (
+                <div key={i} style={{ position: "absolute", left, top, transform: "translate(-50%, -50%)" }}>
+                  <div style={{ position: "relative" }}>
+                    <div style={{
+                      width: pt.size, height: pt.size, borderRadius: "50%",
+                      background: pt.color, opacity: 0.9,
+                      boxShadow: `0 0 8px ${pt.color}60`,
+                    }} />
+                    <div style={{
+                      position: "absolute", left: pt.size + 3, top: "50%", transform: "translateY(-50%)",
+                      fontSize: 9, color: "#AAA", whiteSpace: "nowrap",
+                      background: "rgba(10,10,12,0.75)", padding: "1px 4px", borderRadius: 3,
+                    }}>{pt.label}</div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Zone labels */}
+            <div style={{ position: "absolute", left: "10%", bottom: "14%", fontSize: 9, color: "#1A3020", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Zone sécurité</div>
+            <div style={{ position: "absolute", right: "5%", top: "10%", fontSize: 9, color: "#2F1010", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Zone spéculative</div>
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 10, color: "#444", fontStyle: "italic" }}>
+            ⚠️ Positionnement indicatif à titre éducatif. Les rendements passés ne présagent pas des rendements futurs.
+          </div>
+        </div>
+      )}
 
       {/* Sources footer */}
       <div style={{ marginTop: 24, padding: "14px 20px", background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12 }}>
@@ -3393,7 +3503,7 @@ function AdminApp({ db, onLogout }) {
                       <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                         <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                         {parCategorie.length>0?<>
-                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11}}/></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/></PieChart></ResponsiveContainer>
                           {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
                         </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
                       </div>
@@ -3738,7 +3848,7 @@ function ClientApp({ db, userId, onLogout }) {
               <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                 <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                 {parCategorie.length>0?<>
-                  <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11}}/></PieChart></ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/></PieChart></ResponsiveContainer>
                   {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
                 </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
               </div>
