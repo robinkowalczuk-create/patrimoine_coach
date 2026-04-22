@@ -109,7 +109,7 @@ const CSS = `
   *{box-sizing:border-box;margin:0;padding:0}
   ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#2A2A2A;border-radius:2px}
   .cr:hover{background:#181818!important}.tb:hover{color:#E2DDD6!important}.btn:hover{opacity:0.8}.row:hover{background:#1A1A1E!important}
-  input,select,textarea{font-family:inherit}input:focus,select:focus,textarea:focus{outline:none;border-color:#444!important}
+  input,select,textarea{font-family:inherit;font-size:16px!important}input:focus,select:focus,textarea:focus{outline:none;border-color:#444!important}
   .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:500}
   .app-layout{display:flex;min-height:100vh}
   .sidebar{width:240px;flex-shrink:0;transition:transform 0.3s ease}
@@ -124,6 +124,9 @@ const CSS = `
   .header-pad{padding:18px 32px}
   .mob-btn{display:none;background:none;border:none;cursor:pointer;color:#C9A96E;font-size:22px;padding:4px 8px;font-family:inherit}
   .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
+  .recharts-tooltip-label { color: #E2DDD6 !important; }
+  .recharts-tooltip-item { color: #E2DDD6 !important; }
+  .recharts-default-tooltip { color: #E2DDD6 !important; }
   @media(max-width:768px){
     .app-layout{flex-direction:column}
     .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:260px}
@@ -391,7 +394,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
               <BarChart data={chartData} barSize={28}>
                 <XAxis dataKey="name" tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11 }} />
+                <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6" }} />
                 <Bar dataKey="val" radius={[4,4,0,0]}>{chartData.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -2108,9 +2111,21 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={timeline}>
                     <defs><linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={color} stopOpacity={0.25} /><stop offset="95%" stopColor={color} stopOpacity={0} /></linearGradient></defs>
-                    <XAxis dataKey="date" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <XAxis
+                      dataKey="ts"
+                      type="number"
+                      scale="time"
+                      domain={["dataMin", "dataMax"]}
+                      tickFormatter={ts => { const d = new Date(ts); return `${d.toLocaleString("fr-FR", { month: "short" })} ${d.getFullYear()}`; }}
+                      tick={{ fill: "#444", fontSize: 9 }} axisLine={false} tickLine={false}
+                      minTickGap={40}
+                    />
                     <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+                    <Tooltip
+                      labelFormatter={ts => { const d = new Date(ts); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); }}
+                      formatter={v => fmt(v)}
+                      contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }}
+                    />
                     <Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad2)" dot={{ fill: color, r: 3 }} />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -3261,7 +3276,7 @@ function AdminApp({ db, onLogout }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-
+  const [openProgObj, setOpenProgObj] = useState(null);
 
   useEffect(() => { loadAll(); }, []);
   useEffect(() => { if (activeClient) loadClientData(activeClient.id); }, [activeClient?.id]);
@@ -3303,7 +3318,7 @@ function AdminApp({ db, onLogout }) {
   const timeline = (() => {
     const byDate={}; avoirs.forEach(a=>{ if(!byDate[a.date])byDate[a.date]={}; byDate[a.date][a.produit_id]=a.montant; });
     const dates=Object.keys(byDate).sort(); const lk={};
-    return dates.map(d=>{ produits.forEach(p=>{ if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id]; }); return { date:fmtDate(d), total:Object.values(lk).reduce((s,v)=>s+v,0) }; });
+    return dates.map(d=>{ produits.forEach(p=>{ if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id]; }); return { date:fmtDate(d), rawDate: d, ts: new Date(d).getTime(), total:Object.values(lk).reduce((s,v)=>s+v,0) }; });
   })();
 
 
@@ -3567,8 +3582,46 @@ function AdminApp({ db, onLogout }) {
                                 {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
                                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                               </div>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}><span>{fmt(patObj)} liés</span><span style={{color:ocol}}>{prog}%</span></div>
-                              <div style={{background:"#1A1A1E",borderRadius:3,height:5}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}>
+                                <span>{fmt(patObj)} liés</span>
+                                <button onClick={()=>setOpenProgObj(openProgObj===obj.id?null:obj.id)} style={{background:"none",border:"none",cursor:"pointer",color:ocol,fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                                  <span style={{fontWeight:600}}>{prog}%</span>
+                                  <span style={{fontSize:8}}>{openProgObj===obj.id?"▲":"▼"}</span>
+                                </button>
+                              </div>
+                              <div style={{background:"#1A1A1E",borderRadius:3,height:5,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3,transition:"width 0.4s"}}/></div>
+                              {openProgObj===obj.id&&(()=>{
+                                const likedProdIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
+                                const allAvoirsLiked=avoirs.filter(a=>likedProdIds.includes(a.produit_id)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+                                if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:"#444",fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
+                                const byDate={};
+                                const lkProg={};
+                                allAvoirsLiked.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
+                                const progData=Object.keys(byDate).sort().map(d=>{
+                                  produits.filter(p=>likedProdIds.includes(p.id)).forEach(p=>{if(byDate[d][p.id]!==undefined)lkProg[p.id]=byDate[d][p.id];});
+                                  const tot=Object.values(lkProg).reduce((s,v)=>s+v,0);
+                                  return{date:fmtDate(d),ts:new Date(d).getTime(),pct:Math.min(100,Math.round((tot/obj.montant_cible)*100)),total:tot};
+                                });
+                                return(
+                                  <div style={{background:"#141416",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                                    <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
+                                    <ResponsiveContainer width="100%" height={120}>
+                                      <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
+                                        <defs><linearGradient id={`g${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
+                                        <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
+                                        <YAxis domain={[0,100]} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
+                                        <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={(v,n)=>[`${v}% — ${fmt(progData.find(d=>d.ts===ts)?.total||0)}`,""]} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/>
+                                        <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#g${obj.id})`} dot={{fill:ocol,r:3}}/>
+                                      </AreaChart>
+                                    </ResponsiveContainer>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginTop:6}}>
+                                      <span>Départ : {progData[0]?.pct}%</span>
+                                      <span>Actuel : <span style={{color:ocol,fontWeight:600}}>{prog}%</span></span>
+                                      <span>Objectif : {fmt(obj.montant_cible)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <div style={{padding:"14px 20px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -3697,6 +3750,7 @@ function ClientApp({ db, userId, onLogout }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [openProgObj, setOpenProgObj] = useState(null);
 
   useEffect(() => { loadClientProfile(); }, [userId]);
 
@@ -3737,7 +3791,7 @@ function ClientApp({ db, userId, onLogout }) {
   const timeline = (() => {
     const byDate={}; avoirs.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
     const dates=Object.keys(byDate).sort(); const lk={};
-    return dates.map(d=>{produits.forEach(p=>{if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id];});return{date:fmtDate(d),total:Object.values(lk).reduce((s,v)=>s+v,0)};});
+    return dates.map(d=>{produits.forEach(p=>{if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id];});return{date:fmtDate(d),rawDate:d,ts:new Date(d).getTime(),total:Object.values(lk).reduce((s,v)=>s+v,0)};});
   })();
 
   async function saveModal() {
@@ -3911,8 +3965,46 @@ function ClientApp({ db, userId, onLogout }) {
                         {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
                           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                       </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}><span>{fmt(patObj)} accumulés</span><span style={{color:ocol,fontWeight:600}}>{prog}%</span></div>
-                      <div style={{background:"#1A1A1E",borderRadius:3,height:6}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}>
+                        <span>{fmt(patObj)} accumulés</span>
+                        <button onClick={()=>setOpenProgObj(openProgObj===obj.id?null:obj.id)} style={{background:"none",border:"none",cursor:"pointer",color:ocol,fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontWeight:600}}>{prog}%</span>
+                          <span style={{fontSize:8}}>{openProgObj===obj.id?"▲":"▼"}</span>
+                        </button>
+                      </div>
+                      <div style={{background:"#1A1A1E",borderRadius:3,height:6,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
+                      {openProgObj===obj.id&&(()=>{
+                        const likedProdIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
+                        const allAvoirsLiked=avoirs.filter(a=>likedProdIds.includes(a.produit_id)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+                        if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:"#444",fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
+                        const byDate={};
+                        const lkProg={};
+                        allAvoirsLiked.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
+                        const progData=Object.keys(byDate).sort().map(d=>{
+                          produits.filter(p=>likedProdIds.includes(p.id)).forEach(p=>{if(byDate[d][p.id]!==undefined)lkProg[p.id]=byDate[d][p.id];});
+                          const tot=Object.values(lkProg).reduce((s,v)=>s+v,0);
+                          return{date:fmtDate(d),ts:new Date(d).getTime(),pct:Math.min(100,Math.round((tot/obj.montant_cible)*100)),total:tot};
+                        });
+                        return(
+                          <div style={{background:"#141416",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                            <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
+                            <ResponsiveContainer width="100%" height={120}>
+                              <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
+                                <defs><linearGradient id={`gc${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
+                                <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
+                                <YAxis domain={[0,100]} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
+                                <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={v=>[`${v}%`,""]} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/>
+                                <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#gc${obj.id})`} dot={{fill:ocol,r:3}}/>
+                              </AreaChart>
+                            </ResponsiveContainer>
+                            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginTop:6}}>
+                              <span>Départ : {progData[0]?.pct}%</span>
+                              <span>Actuel : <span style={{color:ocol,fontWeight:600}}>{prog}%</span></span>
+                              <span>Objectif : {fmt(obj.montant_cible)}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     {objJalons.length>0&&(
                       <div style={{padding:"14px 20px"}}>
