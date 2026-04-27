@@ -12,7 +12,7 @@ const FINNHUB_KEY = "d79a0r9r01qqpmhg0acgd79a0r9r01qqpmhg0ad0";
 const authHeaders = (token) => ({
   "Content-Type": "application/json",
   "apikey": SB_KEY,
-  "Authorization": Bearer ${token || SB_KEY}`,
+  "Authorization": `Bearer ${token || SB_KEY}`,
 });
 
 const auth = {
@@ -348,7 +348,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         {["actuel","cible"].map(t => (
           <button key={t} onClick={() => setBudgetType(t)}
-            style={{ padding:"8px 20px",background:budgetType===t?"#C9A96E":"#141416",border:1px solid ${budgetType===t?"#C9A96E":"#222"}`,borderRadius:8,cursor:"pointer",color:budgetType===t?"#0C0C0E":"#777",fontSize:12,fontWeight:budgetType===t?600:400,fontFamily:"inherit" }}>
+            style={{ padding:"8px 20px",background:budgetType===t?"#C9A96E":"#141416",border:`1px solid ${budgetType===t?"#C9A96E":"#222"}`,borderRadius:8,cursor:"pointer",color:budgetType===t?"#0C0C0E":"#777",fontSize:12,fontWeight:budgetType===t?600:400,fontFamily:"inherit" }}>
             Budget {t === "actuel" ? "actuel" : "cible"}
           </button>
         ))}
@@ -361,7 +361,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
           <BudgetGroup categorie="depense_variable" items={variables} />
 
           {/* Épargne disponible */}
-          <div style={{ background: epargne >= 0 ? "#1A2F1F" : "#2F1010", border: 1px solid ${epargne>=0?"#5EBF7A30":"#E07A7A30"}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ background: epargne >= 0 ? "#1A2F1F" : "#2F1010", border: `1px solid ${epargne>=0?"#5EBF7A30":"#E07A7A30"}`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div>
               <div style={{ fontSize: 9, color: epargne>=0?"#5EBF7A":"#E07A7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>Épargne disponible mensuelle</div>
               <div style={{ fontSize: 11, color: "#666" }}>Revenus ({fmt(totalRevenus)}) − Dépenses ({fmt(totalDepenses)})</div>
@@ -1076,7 +1076,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
       </div>
 
       {/* Objectif annuel */}
-      <div style={{ background: objectifAtteint ? "#1A2F1F" : "#0F0F11", border: 1px solid ${objectifAtteint ? "#5EBF7A40" : objectifAnnuel > 0 ? "#C9A96E30" : "#1A1A1E"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+      <div style={{ background: objectifAtteint ? "#1A2F1F" : "#0F0F11", border: `1px solid ${objectifAtteint ? "#5EBF7A40" : objectifAnnuel > 0 ? "#C9A96E30" : "#1A1A1E"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: objectifAnnuel > 0 ? 14 : 0 }}>
           <div>
             <div style={{ fontSize: 9, color: objectifAtteint ? "#5EBF7A" : "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>
@@ -1402,7 +1402,7 @@ function SimulateurSection({ patrimoineActuel }) {
           { label: `Scénario réaliste (${params.taux_realiste}%)`, val: fmtK(finalRealiste), color: "#C9A96E", bg: "#1A1712" },
           { label: `Scénario optimiste (${params.taux_optimiste}%)`, val: fmtK(finalOptimiste), color: "#5EBF7A", bg: "#1A2F1F" },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: 1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: k.color }}>
               {k.val}
@@ -1602,7 +1602,7 @@ function ImmoLocatifSection() {
           { label: "Rendement net de charges", val: fmtPct(rendement_net), color: "#C9A96E", bg: "#1A1712" },
           { label: "Rendement net-net (après impôts)", val: fmtPct(rendement_net_net), color: "#5EBF7A", bg: "#1A2F1F" },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: 1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: k.color }}>{k.val}</div>
           </div>
@@ -1700,7 +1700,7 @@ function LouerAcheterSection() {
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Louer vs Acheter</div>
 
       {/* Verdict */}
-      <div style={{ background: achatGagnant ? "#1A2F1F" : "#1A2A3F", border: 1px solid ${achatGagnant ? "#5EBF7A" : "#5BA3E0"}30`, borderRadius: 12, padding: "16px 20px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: achatGagnant ? "#1A2F1F" : "#1A2A3F", border: `1px solid ${achatGagnant ? "#5EBF7A" : "#5BA3E0"}30`, borderRadius: 12, padding: "16px 20px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: achatGagnant ? "#5EBF7A" : "#5BA3E0", marginBottom: 3 }}>
             {achatGagnant ? "🏠 Acheter est plus avantageux" : "🏡 Louer est plus avantageux"} sur {p.duree_simulation} ans
@@ -1896,7 +1896,7 @@ function ImpotsSection({ clientId }) {
           { label: "Taux prélèvement à la source", val: fmtPct(taux_source), color: "#7C9B8A", bg: "#0F1A12" },
           { label: "Tranche marginale (TMI)", val: fmtPct(tmi), color: "#8B7BAB", bg: "#1A1A2F" },
         ].map((k,i) => (
-          <div key={i} style={{ background: k.bg, border: 1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color}25`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: k.color }}>{k.val}</div>
           </div>
@@ -1992,13 +1992,13 @@ function ImpotsSection({ clientId }) {
             <div key={i} style={{
               flex: 1, minWidth: 80, padding: "12px 10px", borderRadius: 8, textAlign: "center",
               background: qi_final > t.min ? (t.taux === tmi/100 ? "#2F1018" : "#1A1A2F") : "#141416",
-              border: 1px solid ${qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A40" : "#8B7BAB30") : "#1A1A1E"}`,
+              border: `1px solid ${qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A40" : "#8B7BAB30") : "#1A1A1E"}`,
             }}>
               <div style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A" : "#8B7BAB") : "#333" }}>
                 {(t.taux * 100)}%
               </div>
               <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>
-                {t.min === 0 ? 0 - ${(t.max/1000).toFixed(0)}k` : t.max === Infinity ? `>${(t.min/1000).toFixed(0)}k` : `${(t.min/1000).toFixed(0)}k-${(t.max/1000).toFixed(0)}k`}
+                {t.min === 0 ? `0 - ${(t.max/1000).toFixed(0)}k` : t.max === Infinity ? `>${(t.min/1000).toFixed(0)}k` : `${(t.min/1000).toFixed(0)}k-${(t.max/1000).toFixed(0)}k`}
               </div>
               {t.taux === tmi/100 && qi_final > t.min && (
                 <div style={{ fontSize: 8, color: "#E07A7A", marginTop: 3 }}>← votre TMI</div>
@@ -2024,7 +2024,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
       <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
         {[["synthese", "Synthèse"], ["evolution", "Évolution"], ["revenus", "Revenus"]].map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? 2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
             {l}
           </button>
         ))}
@@ -2088,7 +2088,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 13, fontWeight: 500 }}>{last ? fmt(last.montant) : "--"}</span>
-                            <button onClick={() => onAddAvoir(p)} style={{ padding: "3px 8px", background: `${color}20`, border: 1px solid ${color}40`, borderRadius: 5, cursor: "pointer", color, fontSize: 10 }}>+ Avoir</button>
+                            <button onClick={() => onAddAvoir(p)} style={{ padding: "3px 8px", background: `${color}20`, border: `1px solid ${color}40`, borderRadius: 5, cursor: "pointer", color, fontSize: 10 }}>+ Avoir</button>
                             <button onClick={() => onDelProduit(p.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#E07A7A", fontSize: 11 }}>✕</button>
                           </div>
                         </div>
@@ -2235,7 +2235,7 @@ function RevenusSection({ db, clientId, color, fmt }) {
           { label: `Revenus ${CURRENT_YEAR - 1}`, val: fmt(totalParAnnee[CURRENT_YEAR - 1] || 0), color: "#E2DDD6", bg: "#0F0F11" },
           { label: "Total saisi", val: fmt(totalGlobal), color: "#E2DDD6", bg: "#0F0F11" },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: 1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color + "30"}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color + "30"}`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
           </div>
@@ -2419,7 +2419,7 @@ function ImmobilierSection({ db, clientId, isReadOnly }) {
       <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
         {[["biens","Mes biens"], ["locatif","Rentabilité locative"], ["louer_acheter","Louer vs Acheter"]].map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? 2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
             {l}
           </button>
         ))}
@@ -2501,7 +2501,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
           { label: "Dettes immobilières", val: fmt(totalDette), color: "#E07A7A", bg: "#2F1010" },
           { label: "Patrimoine immobilier net", val: fmt(patrimoineNet), color: "#5EBF7A", bg: "#1A2F1F" },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: 1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color+"25"}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color+"25"}`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
           </div>
@@ -2724,7 +2724,7 @@ function NotesSection({ db, clientId, auteur, color }) {
           const isAdmin = n.auteur === "admin";
           const noteColor = isAdmin ? (color || "#C9A96E") : "#6AAED4";
           return (
-            <div key={n.id} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderLeft: 3px solid ${noteColor}50`, borderRadius: "0 10px 10px 0", padding: "14px 18px" }}>
+            <div key={n.id} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderLeft: `3px solid ${noteColor}50`, borderRadius: "0 10px 10px 0", padding: "14px 18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 10, color: noteColor }}>{isAdmin ? "👤 Conseiller" : "🙋 Client"}</div>
@@ -3088,7 +3088,7 @@ function InformationsSection() {
           const c = INFO_DATA[k];
           return (
             <button key={k} onClick={() => { setActiveCategory(k); setOpenItem(null); }}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: activeCategory === k ? c.color : "#555", borderBottom: activeCategory === k ? 2px solid ${c.color}` : "2px solid transparent", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: activeCategory === k ? c.color : "#555", borderBottom: activeCategory === k ? `2px solid ${c.color}` : "2px solid transparent", fontFamily: "inherit", whiteSpace: "nowrap" }}>
               {c.label}
             </button>
           );
@@ -3100,7 +3100,7 @@ function InformationsSection() {
         {cat.items.map((item, i) => {
           const isOpen = openItem === i;
           return (
-            <div key={i} style={{ background: "#0F0F11", border: 1px solid ${isOpen ? cat.color + "40" : "#1A1A1E"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s" }}>
+            <div key={i} style={{ background: "#0F0F11", border: `1px solid ${isOpen ? cat.color + "40" : "#1A1A1E"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s" }}>
               {/* Header */}
               <div onClick={() => setOpenItem(isOpen ? null : i)}
                 style={{ padding: "16px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -3108,7 +3108,7 @@ function InformationsSection() {
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 500, color: "#E2DDD6", marginBottom: 3 }}>{item.nom}</div>
-                    <span style={{ padding: "2px 8px", background: `${cat.color}15`, border: 1px solid ${cat.color}30`, borderRadius: 20, fontSize: 10, color: cat.color }}>{item.badge}</span>
+                    <span style={{ padding: "2px 8px", background: `${cat.color}15`, border: `1px solid ${cat.color}30`, borderRadius: 20, fontSize: 10, color: cat.color }}>{item.badge}</span>
                   </div>
                 </div>
                 <div style={{ fontSize: 16, color: "#555", transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</div>
@@ -3130,7 +3130,7 @@ function InformationsSection() {
                     </table>
                   </div>
                   {item.note && (
-                    <div style={{ background: `${cat.color}10`, border: 1px solid ${cat.color}25`, borderRadius: 8, padding: "10px 14px", display: "flex", gap: 10 }}>
+                    <div style={{ background: `${cat.color}10`, border: `1px solid ${cat.color}25`, borderRadius: 8, padding: "10px 14px", display: "flex", gap: 10 }}>
                       <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
                       <span style={{ fontSize: 12, color: "#AAA", lineHeight: 1.6 }}>{item.note}</span>
                     </div>
@@ -3157,7 +3157,7 @@ function InformationsSection() {
               { label: "Liquidité faible", color: "#E07A7A" },
             ].map((l, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: l.color, border: 2px solid ${l.color}` }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: l.color, border: `2px solid ${l.color}` }} />
                 <span style={{ fontSize: 10, color: "#666" }}>{l.label}</span>
               </div>
             ))}
@@ -3215,7 +3215,7 @@ function InformationsSection() {
                     <div style={{
                       width: pt.size, height: pt.size, borderRadius: "50%",
                       background: pt.color, opacity: 0.9,
-                      boxShadow: 0 0 8px ${pt.color}60`,
+                      boxShadow: `0 0 8px ${pt.color}60`,
                     }} />
                     <div style={{
                       position: "absolute", left: pt.size + 3, top: "50%", transform: "translateY(-50%)",
@@ -3398,7 +3398,7 @@ function AdminApp({ db, onLogout }) {
             const col=clientColor(idx);
             return (
               <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");setSidebarOpen(false);}}
-                style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?"#1A1712":"transparent",border:active?1px solid ${col}25`:"1px solid transparent"}}>
+                style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?"#1A1712":"transparent",border:active?`1px solid ${col}25`:"1px solid transparent"}}>
                 <div style={{display:"flex",alignItems:"center",gap:9}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
                   <div>
@@ -3481,7 +3481,7 @@ function AdminApp({ db, onLogout }) {
               <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
                 {ALL_TABS.filter(k => !activeClient.onglets_actifs || activeClient.onglets_actifs.includes(k)).map(k => [k, TAB_LABELS[k]]).map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
-                    style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?2px solid ${color}`:"2px solid transparent"}}>
+                    style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
                     {l}
                   </button>
                 ))}
@@ -3632,7 +3632,7 @@ function AdminApp({ db, onLogout }) {
                               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                                 {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
                                   <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:1.`5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                                     <div style={{flex:1}}>
                                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                         <span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>
@@ -3673,7 +3673,7 @@ function AdminApp({ db, onLogout }) {
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {(modal.type==="client_new"||modal.type==="client_edit")&&<>
   {inp("nom","Nom complet *","text","Sophie Martin")}
   {inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}
@@ -3692,8 +3692,8 @@ function AdminApp({ db, onLogout }) {
             const cur=form.onglets_actifs||ALL_TABS;
             const next=active?cur.filter(t=>t!==tab):[...cur,tab];
             f("onglets_actifs",next);
-          }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?"#1A2F1F":"#141416",border:1px solid ${active?"#5EBF7A30":"#1A1A1E"}`,borderRadius:8,cursor:"pointer"}}>
-            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:1.5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
+          }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?"#1A2F1F":"#141416",border:`1px solid ${active?"#5EBF7A30":"#1A1A1E"}`,borderRadius:8,cursor:"pointer"}}>
+            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:1.`5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
             <span style={{fontSize:12,color:active?"#E2DDD6":"#777"}}>{TAB_LABELS[tab]}</span>
           </div>
         );
@@ -3714,8 +3714,8 @@ function AdminApp({ db, onLogout }) {
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:1.`5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
                         <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
@@ -3869,7 +3869,7 @@ function ClientApp({ db, userId, onLogout }) {
       <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
         {ALL_TABS.filter(k => !client.onglets_actifs || client.onglets_actifs.includes(k)).map(k => [k, CLIENT_TAB_LABELS[k]]).map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
-            style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
+            style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
             {l}
           </button>
         ))}
@@ -4012,7 +4012,7 @@ function ClientApp({ db, userId, onLogout }) {
                         <div style={{display:"flex",flexDirection:"column",gap:5}}>
                           {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
                             <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:1.`5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                               <div style={{flex:1}}>
                                 <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>{j.montant_cible>0&&<span style={{fontSize:11,color:ocol}}>{fmt(j.montant_cible)}</span>}</div>
                                 {j.produit_lie&&<div style={{fontSize:10,color:"#555",marginTop:2}}>📦 {j.produit_lie}</div>}
@@ -4049,7 +4049,7 @@ function ClientApp({ db, userId, onLogout }) {
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
           <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
             {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
             {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Mon objectif")}{inp("montant_cible","Montant cible (€) *","number","50000")}{inp("description","Description","text","Description de mon objectif")}</>}
@@ -4062,8 +4062,8 @@ function ClientApp({ db, userId, onLogout }) {
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:1.`5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
                         <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
