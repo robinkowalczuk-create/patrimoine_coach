@@ -104,10 +104,41 @@ function getAge(dateNaissance) {
 // ══════════════════════════════════════
 //  SHARED STYLES
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════
+const DARK_THEME = {
+  bg: "#0C0C0E", bg2: "#0F0F11", bg3: "#141416", bg4: "#1A1A1E",
+  border: "#1A1A1E", border2: "#2A2A2A",
+  text: "#E2DDD6", text2: "#CCC", text3: "#888", text4: "#555", text5: "#444", text6: "#333",
+  gold: "#C9A96E", sidebar: "#0A0A0C", sidebarBorder: "#1A1A1E",
+  hover: "#181818", rowHover: "#1A1A1E", inputBg: "#141416",
+  green: "#5EBF7A", greenBg: "#1A2F1F",
+  red: "#E07A7A", redBg: "#2F1010",
+  blue: "#6AAED4", blueBg: "#1A2A3F",
+  purple: "#8B7BAB", purpleBg: "#1A1A2F",
+  teal: "#7C9B8A", tealBg: "#0F1A12",
+};
+const LIGHT_THEME = {
+  bg: "#F5F4F0", bg2: "#FFFFFF", bg3: "#F0EEE8", bg4: "#E8E6DF",
+  border: "#E0DDD6", border2: "#C8C5BE",
+  text: "#1A1814", text2: "#2D2A25", text3: "#6B6860", text4: "#8A8780", text5: "#AAA8A0", text6: "#C8C5BE",
+  gold: "#B8924A", sidebar: "#1A1814", sidebarBorder: "#2D2A25",
+  hover: "#ECEAE3", rowHover: "#F0EEE8", inputBg: "#FFFFFF",
+  green: "#2E7D52", greenBg: "#E8F5EE",
+  red: "#C0392B", redBg: "#FDECEA",
+  blue: "#1E6FA8", blueBg: "#E8F2FA",
+  purple: "#6B5BA8", purpleBg: "#F0EDF8",
+  teal: "#4A8066", tealBg: "#EBF5F0",
+};
+const ThemeContext = React.createContext(DARK_THEME);
+function useTheme() { return React.useContext(ThemeContext); }
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
   ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#2A2A2A;border-radius:2px}
+  [data-light] ::-webkit-scrollbar-thumb{background:#C8C5BE}
   .cr:hover{background:#181818!important}.tb:hover{color:#E2DDD6!important}.btn:hover{opacity:0.8}.row:hover{background:#1A1A1E!important}
   input,select,textarea{font-family:inherit;font-size:16px!important}input:focus,select:focus,textarea:focus{outline:none;border-color:#444!important}
   .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:500}
@@ -127,6 +158,12 @@ const CSS = `
   .recharts-tooltip-label { color: #E2DDD6 !important; }
   .recharts-tooltip-item { color: #E2DDD6 !important; }
   .recharts-default-tooltip { color: #E2DDD6 !important; }
+  /* Light mode overrides */
+  .light-mode { color: #1A1814 !important; }
+  .light-mode input, .light-mode select, .light-mode textarea { background: #FFFFFF !important; color: #1A1814 !important; border-color: #C8C5BE !important; }
+  .light-mode .cr:hover { background: #ECEAE3 !important; }
+  .light-mode .row:hover { background: #F0EEE8 !important; }
+  .light-mode ::-webkit-scrollbar-thumb { background: #C8C5BE; }
   @media(max-width:768px){
     .app-layout{flex-direction:column}
     .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:260px}
@@ -198,6 +235,17 @@ function LoginPage({ onLogin }) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    try { return localStorage.getItem("rb_theme") !== "light"; } catch { return true; }
+  });
+  const theme = isDark ? DARK_THEME : LIGHT_THEME;
+  function toggleTheme() {
+    setIsDark(d => {
+      const next = !d;
+      try { localStorage.setItem("rb_theme", next ? "dark" : "light"); } catch {}
+      return next;
+    });
+  }
 
   function handleLogin(s) {
     setSession(s);
@@ -250,10 +298,18 @@ export default function App() {
   // Intercepter les erreurs 401 pour déconnecter automatiquement
   const db = session ? sb(session.access_token, handleLogout) : null;
 
-  if (!session) return <LoginPage onLogin={handleLogin} />;
-  return isAdmin
-    ? <AdminApp db={db} session={session} onLogout={handleLogout} />
-    : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} />;
+  if (!session) return (
+    <ThemeContext.Provider value={theme}>
+      <LoginPage onLogin={handleLogin} isDark={isDark} onToggleTheme={toggleTheme} />
+    </ThemeContext.Provider>
+  );
+  return (
+    <ThemeContext.Provider value={theme}>
+      {isAdmin
+        ? <AdminApp db={db} session={session} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />
+        : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />}
+    </ThemeContext.Provider>
+  );
 }
 
 // ══════════════════════════════════════
@@ -1114,24 +1170,50 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           </div>
         )}
 
-        {objectifAnnuel > 0 && !editingObjectif && (
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555", marginBottom: 6 }}>
-              <span>{fmt(totalAnneePrecedente)} ({PREV_YEAR})</span>
-              <span style={{ color: objectifAtteint ? "#5EBF7A" : "#C9A96E", fontWeight: 600 }}>
-                {objectifAtteint ? "✅ Objectif atteint !" : `${pctObjectif.toFixed(1)}% de l'objectif`}
-              </span>
-            </div>
-            <div style={{ background: "#1A1A1E", borderRadius: 4, height: 8, overflow: "hidden" }}>
-              <div style={{ width: `${pctObjectif}%`, height: "100%", background: objectifAtteint ? "#5EBF7A" : "#C9A96E", borderRadius: 4, transition: "width 0.6s ease" }} />
-            </div>
-            {!objectifAtteint && objectifAnnuel > 0 && (
-              <div style={{ fontSize: 10, color: "#555", marginTop: 5 }}>
-                Il manque {fmt(objectifAnnuel - totalAnneePrecedente)} pour atteindre l'objectif
+        {objectifAnnuel > 0 && !editingObjectif && (() => {
+          // Build chart data: one point per year + objectif line
+          const objChartData = [...annees].reverse().map(a => ({
+            annee: String(a),
+            dividendes: totalParAnnee[a] || 0,
+            objectif: objectifAnnuel,
+          }));
+          return (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 10, color: "#555" }}>Basé sur les dividendes annuels vs objectif {fmt(objectifAnnuel)}</span>
+                <span style={{ fontSize: 11, color: objectifAtteint ? "#5EBF7A" : "#C9A96E", fontWeight: 600 }}>
+                  {objectifAtteint ? "✅ Atteint en " + PREV_YEAR : `${pctObjectif.toFixed(0)}% en ${PREV_YEAR}`}
+                </span>
               </div>
-            )}
-          </div>
-        )}
+              {objChartData.length > 0 && (
+                <ResponsiveContainer width="100%" height={140}>
+                  <AreaChart data={objChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="divGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#5EBF7A" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#5EBF7A" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false}
+                      tickFormatter={v => `${(v/1000).toFixed(1)}k`}
+                      domain={[0, Math.max(objectifAnnuel * 1.1, Math.max(...objChartData.map(d => d.dividendes)) * 1.1)]}
+                    />
+                    <Tooltip formatter={(v, n) => [fmt(v), n === "dividendes" ? "Dividendes" : "Objectif"]}
+                      contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+                    <Area type="monotone" dataKey="dividendes" stroke="#5EBF7A" strokeWidth={2} fill="url(#divGrad)" dot={{ fill: "#5EBF7A", r: 3 }} />
+                    <Line type="monotone" dataKey="objectif" stroke="#C9A96E" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+              {!objectifAtteint && (
+                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>
+                  Il manque {fmt(objectifAnnuel - totalAnneePrecedente)} par rapport à l'objectif ({PREV_YEAR})
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Graphique */}
@@ -2120,7 +2202,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
                       tick={{ fill: "#444", fontSize: 9 }} axisLine={false} tickLine={false}
                       minTickGap={40}
                     />
-                    <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                    <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} domain={["auto", "auto"]} />
                     <Tooltip
                       labelFormatter={ts => { const d = new Date(ts); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); }}
                       formatter={v => fmt(v)}
@@ -2175,6 +2257,7 @@ function RevenusSection({ db, clientId, color, fmt }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ categorie: "", annee: new Date().getFullYear(), montant: "" });
   const [saving, setSaving] = useState(false);
+  const [selectedCat, setSelectedCat] = useState("Tous");
   const CURRENT_YEAR = new Date().getFullYear();
   const CATEGORIES_REV = ["Salaire", "Revenus fonciers", "Dividendes", "Plus-values", "Revenus indépendant", "Pension / Retraite", "Autres revenus"];
 
@@ -2219,8 +2302,13 @@ function RevenusSection({ db, clientId, color, fmt }) {
   categories.forEach(c => { totalParCat[c] = revenus.filter(r => r.categorie === c).reduce((s, r) => s + r.montant, 0); });
   // Total global
   const totalGlobal = revenus.reduce((s, r) => s + r.montant, 0);
-  // Chart data
-  const chartData = [...annees].reverse().map(a => ({ annee: String(a), total: totalParAnnee[a] }));
+  // Chart data with category filter
+  const revenusFiltres = selectedCat === "Tous" ? revenus : revenus.filter(r => r.categorie === selectedCat);
+  const totalFiltreParAnnee = {};
+  annees.forEach(a => { totalFiltreParAnnee[a] = revenusFiltres.filter(r => r.annee === a).reduce((s, r) => s + r.montant, 0); });
+  const chartData = [...annees].reverse().map(a => ({ annee: String(a), total: totalFiltreParAnnee[a] }));
+  const chartMin = Math.min(...chartData.map(d => d.total).filter(v => v > 0)) * 0.85;
+  const chartMax = Math.max(...chartData.map(d => d.total)) * 1.05;
   // Catégorie colors
   const catColors = ["#C9A96E","#7C9B8A","#8B7BAB","#6AAED4","#E07A7A","#5EBF7A","#E0A03A"];
 
@@ -2246,34 +2334,52 @@ function RevenusSection({ db, clientId, color, fmt }) {
       <div className="grid-budget" style={{ marginBottom: 20 }}>
         {/* Graphique */}
         <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
-          {chartData.length > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Évolution annuelle</div>
+            <select value={selectedCat} onChange={e => setSelectedCat(e.target.value)}
+              style={{ padding: "4px 10px", background: "#141416", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit" }}>
+              <option value="Tous">Tous les revenus</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {chartData.length > 0 && chartData.some(d => d.total > 0) ? (
             <>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} barSize={32}>
                   <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <YAxis
+                    tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
+                    tickFormatter={v => `${(v/1000).toFixed(0)}k`}
+                    domain={[Math.floor(chartMin / 1000) * 1000, Math.ceil(chartMax / 1000) * 1000]}
+                  />
                   <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
                   <Bar dataKey="total" radius={[4,4,0,0]}>
-                    {chartData.map((_, i) => <Cell key={i} fill={i === chartData.length - 1 ? (color || "#C9A96E") : "#555"} />)}
+                    {chartData.map((d, i) => {
+                      const isLast = i === chartData.length - 1;
+                      const prevVal = i > 0 ? chartData[i-1].total : null;
+                      const isUp = prevVal !== null && d.total >= prevVal;
+                      return <Cell key={i} fill={isLast ? (color || "#C9A96E") : (isUp ? "#5EBF7A" : "#E07A7A")} />;
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              {/* Variation YoY */}
-              {annees.length >= 2 && (() => {
-                const last = totalParAnnee[annees[0]] || 0;
-                const prev = totalParAnnee[annees[1]] || 0;
-                const diff = last - prev;
-                const pct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : 0;
-                return (
-                  <div style={{ marginTop: 12, padding: "10px 14px", background: diff >= 0 ? "#1A2F1F" : "#2F1010", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: "#AAA" }}>vs {annees[1]}</span>
-                    <span style={{ fontSize: 13, color: diff >= 0 ? "#5EBF7A" : "#E07A7A", fontWeight: 600 }}>
-                      {diff >= 0 ? "+" : ""}{fmt(diff)} ({pct}%)
-                    </span>
-                  </div>
-                );
-              })()}
+              {/* YoY pour chaque année */}
+              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                {[...annees].slice(0, -1).map((a, idx) => {
+                  const curr = totalFiltreParAnnee[a] || 0;
+                  const prev = totalFiltreParAnnee[annees[idx + 1]] || 0;
+                  const diff = curr - prev;
+                  const pct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : null;
+                  return (
+                    <div key={a} style={{ padding: "6px 10px", background: diff >= 0 ? "#1A2F1F" : "#2F1010", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: "#777" }}>{a} vs {annees[idx + 1]}</span>
+                      <span style={{ fontSize: 11, color: diff >= 0 ? "#5EBF7A" : "#E07A7A", fontWeight: 600 }}>
+                        {diff >= 0 ? "+" : ""}{fmt(diff)}{pct ? ` (${pct}%)` : ""}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </>
           ) : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
         </div>
@@ -3261,7 +3367,8 @@ function InformationsSection() {
 // ══════════════════════════════════════
 //  ADMIN APP
 // ══════════════════════════════════════
-function AdminApp({ db, onLogout }) {
+function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
+  const theme = useTheme();
   const [clients, setClients] = useState([]);
   const [activeClient, setActiveClient] = useState(null);
   const [produits, setProduits] = useState([]);
@@ -3377,12 +3484,12 @@ function AdminApp({ db, onLogout }) {
   );
 
   return (
-    <div className="app-layout" style={{background:"#0C0C0E",fontFamily:"'DM Sans',sans-serif",color:"#E2DDD6"}}>
+    <div className={`app-layout${isDark ? "" : " light-mode"}`} style={{background:theme.bg,fontFamily:"'DM Sans',sans-serif",color:theme.text}}>
       <style>{CSS}</style>
       <div className={"overlay"+(sidebarOpen?" open":"")} onClick={()=>setSidebarOpen(false)}/>
 
       {/* SIDEBAR */}
-      <div className={"sidebar"+(sidebarOpen?" open":"")} style={{background:"#0F0F11",borderRight:"1px solid #1A1A1E",display:"flex",flexDirection:"column"}}>
+      <div className={"sidebar"+(sidebarOpen?" open":"")} style={{background:isDark?"#0A0A0C":"#1A1814",borderRight:`1px solid ${isDark?"#1A1A1E":"#2D2A25"}`,display:"flex",flexDirection:"column"}}>
         <Logo />
         <div style={{padding:"10px 10px 0"}}>
           <div onClick={()=>{setPage("global");setSidebarOpen(false);}} className="cr"
@@ -3400,7 +3507,7 @@ function AdminApp({ db, onLogout }) {
               <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");setSidebarOpen(false);}}
                 style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?"#1A1712":"transparent",border:active?`1px solid ${col}25`:"1px solid transparent"}}>
                 <div style={{display:"flex",alignItems:"center",gap:9}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.`5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
                   <div>
                     <div style={{fontSize:12,fontWeight:500,color:active?"#E2DDD6":"#888"}}>{c.nom}</div>
                     <div style={{fontSize:10,color:"#444"}}>Client</div>
@@ -3415,6 +3522,10 @@ function AdminApp({ db, onLogout }) {
             style={{width:"100%",padding:"9px",background:"#C9A96E",border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:11,fontWeight:600,marginBottom:8}}>
             + Nouveau client
           </button>
+          <button onClick={onToggleTheme}
+            style={{width:"100%",padding:"7px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#888",fontSize:11,marginBottom:6,fontFamily:"inherit"}}>
+            {isDark ? "☀️ Mode clair" : "🌙 Mode sombre"}
+          </button>
           <button className="btn" onClick={onLogout}
             style={{width:"100%",padding:"7px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#555",fontSize:11}}>
             Déconnexion
@@ -3423,7 +3534,7 @@ function AdminApp({ db, onLogout }) {
       </div>
 
       {/* MAIN */}
-      <div className="main-content">
+      <div className="main-content" style={{background:theme.bg}}>
 
         {page==="global"&&(
           <div style={{padding:"32px 36px"}}>
@@ -3441,7 +3552,7 @@ function AdminApp({ db, onLogout }) {
                     style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20,cursor:"pointer"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
-                        <div style={{width:34,height:34,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color:col}}>{initials(c.nom)}</div>
+                        <div style={{width:34,height:34,borderRadius:"50%",background:`${col}18`,border:`1.`5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color:col}}>{initials(c.nom)}</div>
                         <div>
                           <div style={{fontSize:14,fontWeight:500}}>{c.nom}</div>
                           <div style={{fontSize:10,color:"#555"}}>Client</div>
@@ -3632,7 +3743,7 @@ function AdminApp({ db, onLogout }) {
                               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                                 {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
                                   <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.`5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                                     <div style={{flex:1}}>
                                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                         <span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>
@@ -3693,7 +3804,7 @@ function AdminApp({ db, onLogout }) {
             const next=active?cur.filter(t=>t!==tab):[...cur,tab];
             f("onglets_actifs",next);
           }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?"#1A2F1F":"#141416",border:`1px solid ${active?"#5EBF7A30":"#1A1A1E"}`,borderRadius:8,cursor:"pointer"}}>
-            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:`1.5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
+            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:`1.`5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
             <span style={{fontSize:12,color:active?"#E2DDD6":"#777"}}>{TAB_LABELS[tab]}</span>
           </div>
         );
@@ -3715,7 +3826,7 @@ function AdminApp({ db, onLogout }) {
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
                         style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.`5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
                         <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
@@ -3738,7 +3849,8 @@ function AdminApp({ db, onLogout }) {
 // ══════════════════════════════════════
 //  CLIENT APP
 // ══════════════════════════════════════
-function ClientApp({ db, userId, onLogout }) {
+function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
+  const theme = useTheme();
   const [client, setClient] = useState(null);
   const [produits, setProduits] = useState([]);
   const [avoirs, setAvoirs] = useState([]);
@@ -3835,6 +3947,9 @@ function ClientApp({ db, userId, onLogout }) {
     <div style={{minHeight:"100vh",background:"#0C0C0E",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",color:"#555",flexDirection:"column",gap:16}}>
       <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
       <div style={{fontSize:13}}>Aucun profil trouvé. Contacte ton conseiller.</div>
+      <button onClick={onToggleTheme} style={{padding:"8px 14px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#888",fontSize:11,fontFamily:"inherit"}}>
+        {isDark ? "☀️" : "🌙"}
+      </button>
       <button onClick={onLogout} style={{padding:"8px 20px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12,fontFamily:"inherit"}}>Déconnexion</button>
     </div>
   );
@@ -3851,7 +3966,7 @@ function ClientApp({ db, userId, onLogout }) {
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
           <div style={{width:1,height:20,background:"#222"}}/>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:32,height:32,borderRadius:"50%",background:`${color}18`,border:`1.5px solid ${color}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color}}>{initials(client.nom)}</div>
+            <div style={{width:32,height:32,borderRadius:"50%",background:`${color}18`,border:`1.`5px solid ${color}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color}}>{initials(client.nom)}</div>
             <div>
               <div style={{fontSize:13,fontWeight:500}}>{client.nom}</div>
               <div style={{fontSize:10,color:"#555"}}>Mon espace patrimonial</div>
@@ -4012,7 +4127,7 @@ function ClientApp({ db, userId, onLogout }) {
                         <div style={{display:"flex",flexDirection:"column",gap:5}}>
                           {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
                             <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.`5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                               <div style={{flex:1}}>
                                 <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>{j.montant_cible>0&&<span style={{fontSize:11,color:ocol}}>{fmt(j.montant_cible)}</span>}</div>
                                 {j.produit_lie&&<div style={{fontSize:10,color:"#555",marginTop:2}}>📦 {j.produit_lie}</div>}
@@ -4063,7 +4178,7 @@ function ClientApp({ db, userId, onLogout }) {
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
                         style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.`5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
                         <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
