@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
+  XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine
 } from "recharts";
 
 const SB_URL = "https://paagozsbjjwznrbuytvr.supabase.co";
@@ -164,6 +164,27 @@ const CSS = `
   .light-mode .cr:hover { background: #ECEAE3 !important; }
   .light-mode .row:hover { background: #F0EEE8 !important; }
   .light-mode ::-webkit-scrollbar-thumb { background: #C8C5BE; }
+  /* Light mode: override all dark card backgrounds */
+  .light-mode [style*="background: \"#0F0F11\""], .light-mode [style*="background:\"#0F0F11\""] { background: #FFFFFF !important; }
+  .light-mode [style*="background: \"#141416\""], .light-mode [style*="background:\"#141416\""] { background: #F5F4F0 !important; }
+  .light-mode [style*="background: \"#0A0A0C\""], .light-mode [style*="background:\"#0A0A0C\""] { background: #F0EEE8 !important; }
+  .light-mode [style*="background: \"#1A1A1E\""], .light-mode [style*="background:\"#1A1A1E\""] { background: #E8E6DF !important; }
+  .light-mode [style*="background: \"#0C0C0E\""], .light-mode [style*="background:\"#0C0C0E\""] { background: #F5F4F0 !important; }
+  .light-mode [style*="border: \"1px solid #1A1A1E\""] { border-color: #E0DDD6 !important; }
+  .light-mode [style*="border:\"1px solid #1A1A1E\""] { border-color: #E0DDD6 !important; }
+  .light-mode [style*="borderBottom: \"1px solid #1A1A1E\""] { border-color: #E0DDD6 !important; }
+  .light-mode [style*="color: \"#CCC\""], .light-mode [style*="color:\"#CCC\""] { color: #2D2A25 !important; }
+  .light-mode [style*="color: \"#888\""], .light-mode [style*="color:\"#888\""] { color: #6B6860 !important; }
+  .light-mode [style*="color: \"#555\""], .light-mode [style*="color:\"#555\""] { color: #8A8780 !important; }
+  .light-mode [style*="color: \"#444\""], .light-mode [style*="color:\"#444\""] { color: #AAA8A0 !important; }
+  .light-mode [style*="color: \"#333\""], .light-mode [style*="color:\"#333\""] { color: #C8C5BE !important; }
+  .light-mode [style*="color: \"#E2DDD6\""], .light-mode [style*="color:\"#E2DDD6\""] { color: #1A1814 !important; }
+  .light-mode [style*="color: \"#AAA\""], .light-mode [style*="color:\"#AAA\""] { color: #4A4740 !important; }
+  .light-mode [style*="color: \"#777\""], .light-mode [style*="color:\"#777\""] { color: #6B6860 !important; }
+  .light-mode .modal-box { background: #FFFFFF !important; border-color: #E0DDD6 !important; }
+  .light-mode .sidebar { background: #1A1814 !important; }
+  .light-mode .recharts-cartesian-grid line { stroke: #E8E6DF !important; }
+  .light-mode .recharts-text { fill: #6B6860 !important; }
   @media(max-width:768px){
     .app-layout{flex-direction:column}
     .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:260px}
@@ -448,8 +469,8 @@ function BudgetSection({ db, clientId, isReadOnly }) {
           {totalRevenus > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData} barSize={28}>
-                <XAxis dataKey="name" tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`} />
+                <XAxis dataKey="name" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 9 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`} />
                 <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6" }} />
                 <Bar dataKey="val" radius={[4,4,0,0]}>{chartData.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar>
               </BarChart>
@@ -1171,44 +1192,66 @@ function DividendesSection({ db, clientId, isReadOnly }) {
         )}
 
         {objectifAnnuel > 0 && !editingObjectif && (() => {
-          // Build chart data: one point per year + objectif line
-          const objChartData = [...annees].reverse().map(a => ({
+          // % progression toward goal per year
+          const pctData = [...annees].reverse().map(a => ({
             annee: String(a),
-            dividendes: totalParAnnee[a] || 0,
-            objectif: objectifAnnuel,
+            pct: objectifAnnuel > 0 ? Math.min(100, Math.round(((totalParAnnee[a] || 0) / objectifAnnuel) * 100)) : 0,
+            montant: totalParAnnee[a] || 0,
           }));
+          // Estimate target year via linear extrapolation
+          let estimatedYear = null;
+          if (!objectifAtteint && pctData.length >= 2) {
+            const growthPerYear = pctData[pctData.length-1].pct - pctData[pctData.length-2].pct;
+            if (growthPerYear > 0) {
+              const yearsNeeded = Math.ceil((100 - pctData[pctData.length-1].pct) / growthPerYear);
+              estimatedYear = parseInt(pctData[pctData.length-1].annee) + yearsNeeded;
+            }
+          }
+          const gradColor = pctObjectif >= 100 ? "#5EBF7A" : pctObjectif >= 70 ? "#C9A96E" : "#6AAED4";
           return (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 10, color: "#555" }}>Basé sur les dividendes annuels vs objectif {fmt(objectifAnnuel)}</span>
-                <span style={{ fontSize: 11, color: objectifAtteint ? "#5EBF7A" : "#C9A96E", fontWeight: 600 }}>
-                  {objectifAtteint ? "✅ Atteint en " + PREV_YEAR : `${pctObjectif.toFixed(0)}% en ${PREV_YEAR}`}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+                <span style={{ fontSize: 10, color: "#555" }}>
+                  Progression vers {fmt(objectifAnnuel)}/an
+                  {estimatedYear && !objectifAtteint && (
+                    <span style={{ color: "#C9A96E", marginLeft: 8 }}>Objectif estimé : {estimatedYear}</span>
+                  )}
+                </span>
+                <span style={{ fontSize: 11, color: objectifAtteint ? "#5EBF7A" : gradColor, fontWeight: 600 }}>
+                  {objectifAtteint ? `✅ Objectif atteint (${PREV_YEAR})` : `${pctObjectif.toFixed(0)}% en ${PREV_YEAR}`}
                 </span>
               </div>
-              {objChartData.length > 0 && (
-                <ResponsiveContainer width="100%" height={140}>
-                  <AreaChart data={objChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              {pctData.length > 0 && (
+                <ResponsiveContainer width="100%" height={150}>
+                  <AreaChart data={pctData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="divGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#5EBF7A" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#5EBF7A" stopOpacity={0} />
+                        <stop offset="5%" stopColor={gradColor} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={gradColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: "#555", fontSize: 9 }} axisLine={false} tickLine={false}
-                      tickFormatter={v => `${(v/1000).toFixed(1)}k`}
-                      domain={[0, Math.max(objectifAnnuel * 1.1, Math.max(...objChartData.map(d => d.dividendes)) * 1.1)]}
+                    <XAxis dataKey="annee" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 9 }} axisLine={false} tickLine={false}
+                      tickFormatter={v => `${v}%`} domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} />
+                    <ReferenceLine y={100} stroke="#C9A96E" strokeDasharray="4 4" strokeWidth={1.5}
+                      label={{ value: "100%", position: "insideTopRight", fill: "#C9A96E", fontSize: 9 }} />
+                    <Tooltip
+                      formatter={(v, n, props) => [`${v}% — ${fmt(props?.payload?.montant || 0)}`, "Atteinte objectif"]}
+                      contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}
                     />
-                    <Tooltip formatter={(v, n) => [fmt(v), n === "dividendes" ? "Dividendes" : "Objectif"]}
-                      contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
-                    <Area type="monotone" dataKey="dividendes" stroke="#5EBF7A" strokeWidth={2} fill="url(#divGrad)" dot={{ fill: "#5EBF7A", r: 3 }} />
-                    <Line type="monotone" dataKey="objectif" stroke="#C9A96E" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                    <Area type="monotone" dataKey="pct" stroke={gradColor} strokeWidth={2} fill="url(#divGrad)"
+                      dot={(props) => {
+                        const { cx, cy, payload } = props;
+                        return <circle key={payload.annee} cx={cx} cy={cy} r={4} fill={payload.pct >= 100 ? "#5EBF7A" : gradColor} />;
+                      }}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
-              {!objectifAtteint && (
+              {!objectifAtteint && totalAnneePrecedente > 0 && (
                 <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>
-                  Il manque {fmt(objectifAnnuel - totalAnneePrecedente)} par rapport à l'objectif ({PREV_YEAR})
+                  Manque {fmt(objectifAnnuel - totalAnneePrecedente)} en {PREV_YEAR}
+                  {totalAnneePrecedente > 0 && ` · Croissance nécessaire : +${(((objectifAnnuel / totalAnneePrecedente) - 1) * 100).toFixed(1)}%`}
                 </div>
               )}
             </div>
@@ -1222,9 +1265,9 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} barSize={36}>
-              <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
-              <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+              <XAxis dataKey="annee" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmt(v)} />
+              <Tooltip formatter={v => fmt(v)} contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }} />
               <Bar dataKey="total" fill="#5EBF7A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -1514,12 +1557,12 @@ function SimulateurSection({ patrimoineActuel }) {
         <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>Courbes de projection</div>
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-            <XAxis dataKey="annee" tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmtK(v)} width={70} />
+            <XAxis dataKey="annee" tick={{ fill: isDark ? "#444" : "#8A8780", fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: isDark ? "#444" : "#8A8780", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => fmtK(v)} width={70} />
             <Tooltip formatter={(v, name) => {
               const labels = { pessimiste: "Pessimiste", realiste: "Réaliste", optimiste: "Optimiste", supp_pessimiste: "Pessimiste +épargne", supp_realiste: "Réaliste +épargne", supp_optimiste: "Optimiste +épargne" };
               return [fmtK(v), labels[name] || name];
-            }} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+            }} contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }} />
             <Line type="monotone" dataKey="pessimiste" stroke="#E07A7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
             <Line type="monotone" dataKey="realiste" stroke="#C9A96E" strokeWidth={2.5} dot={false} />
             <Line type="monotone" dataKey="optimiste" stroke="#5EBF7A" strokeWidth={2} dot={false} strokeDasharray="4 4" />
@@ -2134,7 +2177,7 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
               {parCategorie.length > 0 ? <>
                 <ResponsiveContainer width="100%" height={140}>
                   <PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie>
-                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+                    <Tooltip formatter={v => fmt(v)} contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }} />
                   </PieChart>
                 </ResponsiveContainer>
                 {parCategorie.map((c, i) => (
@@ -2199,14 +2242,14 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
                       scale="time"
                       domain={["dataMin", "dataMax"]}
                       tickFormatter={ts => { const d = new Date(ts); return `${d.toLocaleString("fr-FR", { month: "short" })} ${d.getFullYear()}`; }}
-                      tick={{ fill: "#444", fontSize: 9 }} axisLine={false} tickLine={false}
+                      tick={{ fill: isDark ? "#444" : "#8A8780", fontSize: 9 }} axisLine={false} tickLine={false}
                       minTickGap={40}
                     />
-                    <YAxis tick={{ fill: "#444", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} domain={["auto", "auto"]} />
+                    <YAxis tick={{ fill: isDark ? "#444" : "#8A8780", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} domain={["auto", "auto"]} />
                     <Tooltip
                       labelFormatter={ts => { const d = new Date(ts); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); }}
                       formatter={v => fmt(v)}
-                      contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }}
+                      contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }}
                     />
                     <Area type="monotone" dataKey="total" stroke={color} strokeWidth={2} fill="url(#grad2)" dot={{ fill: color, r: 3 }} />
                   </AreaChart>
@@ -2346,13 +2389,13 @@ function RevenusSection({ db, clientId, color, fmt }) {
             <>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} barSize={32}>
-                  <XAxis dataKey="annee" tick={{ fill: "#555", fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="annee" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis
-                    tick={{ fill: "#555", fontSize: 10 }} axisLine={false} tickLine={false}
+                    tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 10 }} axisLine={false} tickLine={false}
                     tickFormatter={v => `${(v/1000).toFixed(0)}k`}
                     domain={[Math.floor(chartMin / 1000) * 1000, Math.ceil(chartMax / 1000) * 1000]}
                   />
-                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }} />
                   <Bar dataKey="total" radius={[4,4,0,0]}>
                     {chartData.map((d, i) => {
                       const isLast = i === chartData.length - 1;
@@ -2395,7 +2438,7 @@ function RevenusSection({ db, clientId, color, fmt }) {
                     dataKey="value" innerRadius={40} outerRadius={65} paddingAngle={3}>
                     {categories.filter(c => (matrix[c][annees[0]] || 0) > 0).map((c, i) => <Cell key={i} fill={catColors[i % catColors.length]} />)}
                   </Pie>
-                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: "#1A1A1E", border: "none", borderRadius: 6, fontSize: 11, color: "#E2DDD6" }} />
+                  <Tooltip formatter={v => fmt(v)} contentStyle={{ background: isDark ? "#1A1A1E" : "#FFFFFF", border: isDark ? "none" : "1px solid #E0DDD6", borderRadius: 6, fontSize: 11, color: isDark ? "#E2DDD6" : "#1A1814" }} />
                 </PieChart>
               </ResponsiveContainer>
               {categories.filter(c => (matrix[c][annees[0]] || 0) > 0).map((c, i) => (
@@ -3629,7 +3672,7 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                       <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                         <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                         {parCategorie.length>0?<>
-                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/></PieChart></ResponsiveContainer>
+                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
                           {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
                         </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
                       </div>
@@ -3719,9 +3762,9 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                                     <ResponsiveContainer width="100%" height={120}>
                                       <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
                                         <defs><linearGradient id={`g${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
-                                        <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
-                                        <YAxis domain={[0,100]} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
-                                        <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={(v,n,props)=>[`${v}% (${fmt(props?.payload?.total||0)})`,""]} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/>
+                                        <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:isDark?"#444":"#8A8780",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
+                                        <YAxis domain={[0,100]} tick={{fill:isDark?"#444":"#8A8780",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
+                                        <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={(v,n,props)=>[`${v}% (${fmt(props?.payload?.total||0)})`,""]} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/>
                                         <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#g${obj.id})`} dot={{fill:ocol,r:3}}/>
                                       </AreaChart>
                                     </ResponsiveContainer>
@@ -4017,7 +4060,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
               <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
                 <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                 {parCategorie.length>0?<>
-                  <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/></PieChart></ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
                   {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
                 </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
               </div>
@@ -4106,9 +4149,9 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                             <ResponsiveContainer width="100%" height={120}>
                               <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
                                 <defs><linearGradient id={`gc${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
-                                <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
-                                <YAxis domain={[0,100]} tick={{fill:"#444",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
-                                <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={v=>[`${v}%`,""]} contentStyle={{background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6"}}/>
+                                <XAxis dataKey="ts" type="number" scale="time" domain={["dataMin","dataMax"]} tickFormatter={ts=>{const d=new Date(ts);return`${d.toLocaleString("fr-FR",{month:"short"})} ${d.getFullYear()}`;}} tick={{fill:isDark?"#444":"#8A8780",fontSize:9}} axisLine={false} tickLine={false} minTickGap={40}/>
+                                <YAxis domain={[0,100]} tick={{fill:isDark?"#444":"#8A8780",fontSize:9}} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} width={30}/>
+                                <Tooltip labelFormatter={ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})} formatter={v=>[`${v}%`,""]} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/>
                                 <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#gc${obj.id})`} dot={{fill:ocol,r:3}}/>
                               </AreaChart>
                             </ResponsiveContainer>
