@@ -108,6 +108,7 @@ function getAge(dateNaissance) {
 //  THEME
 // ══════════════════════════════════════
 const DARK_THEME = {
+  isDark: true,
   bg: "#0C0C0E", bg2: "#0F0F11", bg3: "#141416", bg4: "#1A1A1E",
   border: "#1A1A1E", border2: "#2A2A2A",
   text: "#E2DDD6", text2: "#CCC", text3: "#888", text4: "#555", text5: "#444", text6: "#333",
@@ -120,6 +121,7 @@ const DARK_THEME = {
   teal: "#7C9B8A", tealBg: "#0F1A12",
 };
 const LIGHT_THEME = {
+  isDark: false,
   bg: "#F5F4F0", bg2: "#FFFFFF", bg3: "#F0EEE8", bg4: "#E8E6DF",
   border: "#E0DDD6", border2: "#C8C5BE",
   text: "#1A1814", text2: "#2D2A25", text3: "#6B6860", text4: "#8A8780", text5: "#AAA8A0", text6: "#C8C5BE",
@@ -208,7 +210,8 @@ const CSS = `
 // ══════════════════════════════════════
 //  LOGIN
 // ══════════════════════════════════════
-function LoginPage({ onLogin }) {
+function LoginPage({
+  const theme = useTheme(); const isDark = theme.isDark; onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -336,7 +339,8 @@ export default function App() {
 // ══════════════════════════════════════
 //  BUDGET SECTION (réutilisable)
 // ══════════════════════════════════════
-function BudgetSection({ db, clientId, isReadOnly }) {
+function BudgetSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [budgets, setBudgets] = useState([]);
   const [budgetType, setBudgetType] = useState("actuel");
   const [modal, setModal] = useState(null);
@@ -380,6 +384,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
   const sectionLabel = { "revenu": "Revenus", "depense_fixe": "Dépenses fixes", "depense_variable": "Dépenses variables", "virement": "Virements épargne / investissement" };
 
   function BudgetGroup({ categorie, items }) {
+  const theme = useTheme(); const isDark = theme.isDark;
     const col = sectionColor[categorie];
     return (
       <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 14 }}>
@@ -536,7 +541,8 @@ function BudgetSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  BOURSE SECTION
 // ══════════════════════════════════════
-function BourseSection({ db, clientId, isReadOnly }) {
+function BourseSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [actions, setActions] = useState([]);
   const [quotes, setQuotes] = useState({});
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -805,7 +811,8 @@ function BourseSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  IDENTIFICATION SECTION
 // ══════════════════════════════════════
-function IdentificationSection({ db, clientId, isReadOnly }) {
+function IdentificationSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [data, setData] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1004,7 +1011,8 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  DIVIDENDES SECTION
 // ══════════════════════════════════════
-function DividendesSection({ db, clientId, isReadOnly }) {
+function DividendesSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [dividendes, setDividendes] = useState([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
@@ -1401,7 +1409,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  SIMULATEUR DE PROJECTION
 // ══════════════════════════════════════
-function SimulateurSection({ patrimoineActuel }) {
+function SimulateurSection({
+  const theme = useTheme(); const isDark = theme.isDark; patrimoineActuel }) {
   const [params, setParams] = useState({
     capital: patrimoineActuel || 0,
     epargne: 500,
@@ -1624,6 +1633,7 @@ function SimulateurSection({ patrimoineActuel }) {
 //  IMMOBILIER LOCATIF
 // ══════════════════════════════════════
 function ImmoLocatifSection() {
+  const theme = useTheme(); const isDark = theme.isDark;
   const [p, setP] = useState({
     prix_achat: 200000, frais_notaire_pct: 7.5, travaux: 10000,
     apport: 40000, taux_credit: 3.5, duree_credit: 20,
@@ -1759,6 +1769,7 @@ function ImmoLocatifSection() {
 //  LOUER VS ACHETER
 // ══════════════════════════════════════
 function LouerAcheterSection() {
+  const theme = useTheme(); const isDark = theme.isDark;
   const [p, setP] = useState({
     prix_bien: 300000, apport: 60000, taux_credit: 3.5, duree_credit: 20,
     frais_notaire_pct: 7.5, charges_copro: 200, taxe_fonciere: 1500,
@@ -1917,7 +1928,8 @@ function LouerAcheterSection() {
 // ══════════════════════════════════════
 //  SIMULATEUR IMPÔTS
 // ══════════════════════════════════════
-function ImpotsSection({ clientId }) {
+function ImpotsSection({
+  const theme = useTheme(); const isDark = theme.isDark; clientId }) {
   const storageKey = `impots_${clientId || "default"}`;
   const savedData = (() => { try { return JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { return {}; } })();
   const [p, setP] = useState({
@@ -2139,7 +2151,8 @@ function ImpotsSection({ clientId }) {
 // ══════════════════════════════════════
 //  SYNTHESE + EVOLUTION (sous-onglets)
 // ══════════════════════════════════════
-function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin, db, clientId }) {
+function SyntheseEvolSection({
+  const theme = useTheme(); const isDark = theme.isDark; produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin, db, clientId }) {
   const [subTab, setSubTab] = useState("synthese");
   const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobilier": "#8B7BAB", "Autre": "#888" };
 
@@ -2295,7 +2308,8 @@ function SyntheseEvolSection({ produits, avoirs, parCategorie, patrimoineActuel,
 // ══════════════════════════════════════
 //  REVENUS SECTION
 // ══════════════════════════════════════
-function RevenusSection({ db, clientId, color, fmt }) {
+function RevenusSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, color, fmt }) {
   const [revenus, setRevenus] = useState([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ categorie: "", annee: new Date().getFullYear(), montant: "" });
@@ -2558,7 +2572,8 @@ function RevenusSection({ db, clientId, color, fmt }) {
 // ══════════════════════════════════════
 //  IMMOBILIER (onglet principal avec sous-sections)
 // ══════════════════════════════════════
-function ImmobilierSection({ db, clientId, isReadOnly }) {
+function ImmobilierSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [subTab, setSubTab] = useState("biens");
   const color = "#8B7BAB";
 
@@ -2583,7 +2598,8 @@ function ImmobilierSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  BIENS IMMOBILIERS (suivi patrimoine)
 // ══════════════════════════════════════
-function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
+function BiensImmobiliersSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, isReadOnly }) {
   const [biens, setBiens] = useState([]);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
@@ -2810,7 +2826,8 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 //  NOTES SECTION (Supabase-backed)
 // ══════════════════════════════════════
-function NotesSection({ db, clientId, auteur, color }) {
+function NotesSection({
+  const theme = useTheme(); const isDark = theme.isDark; db, clientId, auteur, color }) {
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -3218,6 +3235,7 @@ const INFO_DATA = {
 };
 
 function InformationsSection() {
+  const theme = useTheme(); const isDark = theme.isDark;
   const [activeCategory, setActiveCategory] = useState("epargne");
   const [openItem, setOpenItem] = useState(null);
 
