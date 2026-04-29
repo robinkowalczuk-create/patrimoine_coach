@@ -2152,7 +2152,7 @@ function ImpotsSection({ clientId }) {
 //  SYNTHESE + EVOLUTION (sous-onglets)
 // ══════════════════════════════════════
 function SyntheseEvolSection({
-  const theme = useTheme(); const isDark = theme.isDark; produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin, db, clientId }) {
+produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient, fmt, fmtDate, onAddProduit, onAddAvoir, onDelProduit, isAdmin, db, clientId }) {
   const theme = useTheme(); const isDark = theme.isDark;
   const [subTab, setSubTab] = useState("synthese");
   const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobilier": "#8B7BAB", "Autre": "#888" };
