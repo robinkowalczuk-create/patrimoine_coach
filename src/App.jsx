@@ -70,8 +70,8 @@ const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobi
 const CATEGORIES = ["Épargne", "Investissement", "Immobilier", "Autre"];
 const STATUTS = ["En bonne voie", "En avance", "À surveiller"];
 const statutStyle = {
-  "En bonne voie": { bg: theme.greenBg, text: "#5EBF7A", dot: "#5EBF7A" },
-  "En avance": { bg: theme.blueBg, text: "#5BA3E0", dot: "#5BA3E0" },
+  "En bonne voie": { bg: "#1A2F1F", text: "#5EBF7A", dot: "#5EBF7A" },
+  "En avance": { bg: "#1A2A3F", text: "#5BA3E0", dot: "#5BA3E0" },
   "À surveiller": { bg: "#2F2010", text: "#E09A3A", dot: "#E09A3A" },
 };
 
@@ -112,7 +112,7 @@ const DARK_THEME = {
   bg: "#0C0C0E", bg2: "#0F0F11", bg3: "#141416", bg4: "#1A1A1E",
   border: "#1A1A1E", border2: "#2A2A2A",
   text: "#E2DDD6", text2: "#CCC", text3: "#888", text4: "#555", text5: "#444", text6: "#333",
-  gold: "#C9A96E", sidebar: theme.bg, sidebarBorder: "#1A1A1E",
+  gold: "#C9A96E", sidebar: "#0A0A0C", sidebarBorder: "#1A1A1E",
   hover: "#181818", rowHover: "#1A1A1E", inputBg: "#141416",
   green: "#5EBF7A", greenBg: "#1A2F1F",
   red: "#E07A7A", redBg: "#2F1010",
