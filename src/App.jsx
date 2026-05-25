@@ -88,7 +88,7 @@ const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
 const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes","informations"];
-const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" };
+const TAB_LABELS = { identification:"Identification", synthese:"Patrimoine", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" };
 const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes", informations:"Informations" };
 
 function getAge(dateNaissance) {
@@ -125,7 +125,7 @@ const LIGHT_THEME = {
   bg: "#F5F4F0", bg2: "#FFFFFF", bg3: "#F0EEE8", bg4: "#E8E6DF",
   border: "#E0DDD6", border2: "#C8C5BE",
   text: "#1A1814", text2: "#2D2A25", text3: "#6B6860", text4: "#8A8780", text5: "#AAA8A0", text6: "#C8C5BE",
-  gold: "#B8924A", sidebar: "#1A1814", sidebarBorder: "#2D2A25",
+  gold: "#B8924A", sidebar: "#E8E6DF", sidebarBorder: "#C8C5BE",
   hover: "#ECEAE3", rowHover: "#F0EEE8", inputBg: "#FFFFFF",
   green: "#2E7D52", greenBg: "#E8F5EE",
   red: "#C0392B", redBg: "#FDECEA",
@@ -184,7 +184,7 @@ const CSS = `
   .light-mode [style*="color: \"#AAA\""], .light-mode [style*="color:\"#AAA\""] { color: #4A4740 !important; }
   .light-mode [style*="color: \"#777\""], .light-mode [style*="color:\"#777\""] { color: #6B6860 !important; }
   .light-mode .modal-box { background: #FFFFFF !important; border-color: #E0DDD6 !important; }
-  .light-mode .sidebar { background: #1A1814 !important; }
+  .light-mode .sidebar { background: #E8E6DF !important; }
   .light-mode .recharts-cartesian-grid line { stroke: #E8E6DF !important; }
   .light-mode .recharts-text { fill: #6B6860 !important; }
   @media(max-width:768px){
@@ -1343,7 +1343,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                         <tr key={e} style={{ borderBottom: `1px solid ${theme.border}`, background: ei % 2 === 0 ? "transparent" : theme.bg }}>
                           <td style={{ padding: "9px 20px 9px 30px", color: theme.text2, whiteSpace: "nowrap" }}>{e}</td>
                           {annees.map(a => (
-                            <td key={a} style={{ padding: "9px 16px", textAlign: "right", color: (matrix[e]?.[a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[e]?.[a] || 0) > 0 ? 500 : 400 }}>
+                            <td key={a} style={{ padding: "9px 16px", textAlign: "right", color: (matrix[e]?.[a] || 0) > 0 ? theme.text : theme.text6, fontWeight: (matrix[e]?.[a] || 0) > 0 ? 500 : 400 }}>
                               {(matrix[e]?.[a] || 0) > 0 ? fmt(matrix[e][a]) : "--"}
                             </td>
                           ))}
@@ -1351,7 +1351,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                         </tr>
                       ))}
                       {/* Support subtotal row */}
-                      <tr style={{ borderBottom: "1px solid #2A2A2A", background: theme.bg }}>
+                      <tr style={{ borderBottom: `1px solid ${theme.border2}`, background: theme.bg }}>
                         <td style={{ padding: "8px 20px", fontSize: 11, color: "#8B7BAB", fontWeight: 600 }}>Sous-total {support}</td>
                         {annees.map(a => (
                           <td key={a} style={{ padding: "8px 16px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontWeight: 600 }}>
@@ -2157,6 +2157,19 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
   const [subTab, setSubTab] = useState("synthese");
   const CAT_COLORS = { "Épargne": "#7C9B8A", "Investissement": "#C9A96E", "Immobilier": "#8B7BAB", "Autre": "#888" };
 
+  // Chargement des biens immobiliers pour affichage sur la page Patrimoine
+  const [biensImmo, setBiensImmo] = useState([]);
+  useEffect(() => {
+    if (db && clientId) {
+      db.get("biens_immobiliers", `select=*&client_id=eq.${clientId}`).then(b => setBiensImmo(b || [])).catch(() => {});
+    }
+  }, [clientId]);
+  const detImmo = b => (b.pct_detention != null ? b.pct_detention : 100) / 100;
+  const immoValeur = biensImmo.reduce((s, b) => s + (b.valorisation_actuelle || b.prix_achat || 0) * detImmo(b), 0);
+  const immoDette = biensImmo.reduce((s, b) => s + (b.capital_restant_du || 0) * detImmo(b), 0);
+  const immoNet = immoValeur - immoDette;
+  const patrimoineGlobal = patrimoineActuel + immoNet;
+
   return (
     <div>
       {/* Sub-tabs */}
@@ -2171,17 +2184,24 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
 
       {subTab === "synthese" && (
         <div>
-          <div className="grid-3" style={{ marginBottom: 20 }}>
+          {/* KPIs globaux */}
+          <div className="grid-3" style={{ marginBottom: 12 }}>
             {[
-              { label: "Patrimoine total", val: fmt(patrimoineActuel) },
-              { label: "Patrimoine cible", val: fmt(activeClient?.patrimoine_cible) },
-              { label: "Produits", val: produits.length },
+              { label: "Patrimoine financier", val: fmt(patrimoineActuel), sub: `${produits.length} produit${produits.length > 1 ? "s" : ""}` },
+              { label: "Immobilier net (perso)", val: fmt(immoNet), sub: biensImmo.length > 0 ? `${biensImmo.length} bien${biensImmo.length > 1 ? "s" : ""} · valeur ${fmt(immoValeur)}` : "Aucun bien" },
+              { label: "Patrimoine cible", val: fmt(activeClient?.patrimoine_cible), sub: "" },
             ].map((k, i) => (
               <div key={i} style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 10, padding: "14px 16px" }}>
                 <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
                 <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24 }}>{k.val}</div>
+                {k.sub && <div style={{ fontSize: 10, color: theme.text4, marginTop: 4 }}>{k.sub}</div>}
               </div>
             ))}
+          </div>
+          {/* Total consolidé */}
+          <div style={{ background: theme.bg2, border: `1px solid ${theme.gold}30`, borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 9, color: theme.gold, textTransform: "uppercase", letterSpacing: "0.15em" }}>Patrimoine global (financier + immobilier)</div>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, color: theme.gold }}>{fmt(patrimoineGlobal)}</div>
           </div>
 
           <div className="grid-split" style={{ marginBottom: 16 }}>
@@ -2632,6 +2652,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
         taux_credit: parseFloat(form.taux_credit) || 0,
         loyer_mensuel: parseFloat(form.loyer_mensuel) || 0,
         charges_annuelles: parseFloat(form.charges_annuelles) || 0,
+        pct_detention: parseFloat(form.pct_detention) || 100,
       };
       if (modal === "edit" && form.id) {
         await db.patch("biens_immobiliers", form.id, cleanPayload);
@@ -2649,10 +2670,11 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
     try { await db.del("biens_immobiliers", id); await loadBiens(); } catch(e) { alert(e.message); }
   }
 
-  const totalPatrimoine = biens.reduce((s, b) => s + (b.valorisation_actuelle || b.prix_achat || 0), 0);
-  const totalDette = biens.reduce((s, b) => s + (b.capital_restant_du || 0), 0);
+  const detention = b => (b.pct_detention != null ? b.pct_detention : 100) / 100;
+  const totalPatrimoine = biens.reduce((s, b) => s + (b.valorisation_actuelle || b.prix_achat || 0) * detention(b), 0);
+  const totalDette = biens.reduce((s, b) => s + (b.capital_restant_du || 0) * detention(b), 0);
   const patrimoineNet = totalPatrimoine - totalDette;
-  const plusValues = biens.reduce((s, b) => s + ((b.valorisation_actuelle || 0) - (b.prix_achat || 0)), 0);
+  const plusValues = biens.reduce((s, b) => s + ((b.valorisation_actuelle || 0) - (b.prix_achat || 0)) * detention(b), 0);
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const inpS = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit", marginBottom: 12 };
@@ -2694,7 +2716,8 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
           const valeur = b.valorisation_actuelle || b.prix_achat || 0;
           const pv = valeur - (b.prix_achat || 0);
           const pvPct = b.prix_achat > 0 ? (pv / b.prix_achat * 100) : 0;
-          const patrimoineNetBien = valeur - (b.capital_restant_du || 0);
+          const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
+          const patrimoineNetBien = (valeur - (b.capital_restant_du || 0)) * det;
           return (
             <div key={b.id} style={{ borderBottom: `1px solid ${theme.border}`, padding: "18px 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -2727,9 +2750,11 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
                   <div style={{ fontSize: 10, color: pv >= 0 ? "#5EBF7A" : "#E07A7A", marginTop: 2 }}>{pv >= 0 ? "+" : ""}{fmt(pv)} ({pvPct.toFixed(1)}%)</div>
                 </div>
                 <div style={{ background: theme.inputBg, borderRadius: 8, padding: "10px 14px" }}>
-                  <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Patrimoine net</div>
+                  <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>
+                    Patrimoine net perso{det < 1 ? ` (${b.pct_detention}%)` : ""}
+                  </div>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#5EBF7A" }}>{fmt(patrimoineNetBien)}</div>
-                  {b.capital_restant_du > 0 && <div style={{ fontSize: 10, color: "#E07A7A", marginTop: 2 }}>Dette : {fmt(b.capital_restant_du)}</div>}
+                  {b.capital_restant_du > 0 && <div style={{ fontSize: 10, color: "#E07A7A", marginTop: 2 }}>Dette : {fmt(b.capital_restant_du * det)}</div>}
                 </div>
               </div>
 
@@ -2776,6 +2801,13 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
 
             <div style={labS}>Valorisation actuelle (€)</div>
             <input type="number" defaultValue={form.valorisation_actuelle || ""} onChange={e => f("valorisation_actuelle", e.target.value)} style={inpS} />
+
+            <div style={labS}>% de détention personnelle</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <input type="number" min="1" max="100" step="1" defaultValue={form.pct_detention != null ? form.pct_detention : 100} onChange={e => f("pct_detention", e.target.value)}
+                style={{ ...inpS, marginBottom: 0, flex: 1 }} />
+              <span style={{ fontSize: 12, color: theme.text4 }}>% — le patrimoine net perso sera calculé en proportion</span>
+            </div>
 
             <div style={{ fontSize: 10, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10, marginTop: 4 }}>Crédit immobilier</div>
             <div className="grid-2" style={{ gap: 10 }}>
@@ -3551,11 +3583,11 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
       <div className={"overlay"+(sidebarOpen?" open":"")} onClick={()=>setSidebarOpen(false)}/>
 
       {/* SIDEBAR */}
-      <div className={"sidebar"+(sidebarOpen?" open":"")} style={{background:isDark?"#0A0A0C":"#1A1814",borderRight:`1px solid ${isDark?"#1A1A1E":"#2D2A25"}`,display:"flex",flexDirection:"column"}}>
+      <div className={"sidebar"+(sidebarOpen?" open":"")} style={{background:theme.sidebar,borderRight:`1px solid ${theme.sidebarBorder}`,display:"flex",flexDirection:"column"}}>
         <Logo />
         <div style={{padding:"10px 10px 0"}}>
           <div onClick={()=>{setPage("global");setSidebarOpen(false);}} className="cr"
-            style={{padding:"9px 12px",borderRadius:8,cursor:"pointer",fontSize:12,color:page==="global"?"#C9A96E":"#555",background:page==="global"?"#1A1712":"transparent",marginBottom:2}}>
+            style={{padding:"9px 12px",borderRadius:8,cursor:"pointer",fontSize:12,color:page==="global"?theme.gold:theme.text4,background:page==="global"?theme.hover:"transparent",marginBottom:2}}>
             ⬡ Vue globale
           </div>
         </div>
@@ -3567,11 +3599,11 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
             const col=clientColor(idx);
             return (
               <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");setSidebarOpen(false);}}
-                style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?"#1A1712":"transparent",border:active?`1px solid ${col}25`:"1px solid transparent"}}>
+                style={{padding:"10px 12px",borderRadius:8,cursor:"pointer",marginBottom:2,background:active?theme.hover:"transparent",border:active?`1px solid ${col}25`:"1px solid transparent"}}>
                 <div style={{display:"flex",alignItems:"center",gap:9}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
                   <div>
-                    <div style={{fontSize:12,fontWeight:500,color:active?"#E2DDD6":"#888"}}>{c.nom}</div>
+                    <div style={{fontSize:12,fontWeight:500,color:active?theme.text:theme.text3}}>{c.nom}</div>
                     <div style={{fontSize:10,color:theme.text5}}>Client</div>
                   </div>
                 </div>
