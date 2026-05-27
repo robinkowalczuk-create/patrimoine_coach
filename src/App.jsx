@@ -3470,6 +3470,8 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
+  const [biens, setBiens] = useState([]);
+  const [objBiens, setObjBiens] = useState([]);
   const [identifications, setIdentifications] = useState({});
   const [page, setPage] = useState("global");
   const [tab, setTab] = useState("identification");
@@ -3490,22 +3492,24 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
 
   async function loadClientData(cid) {
     try {
-      const [p,a,o,ident] = await Promise.all([
+      const [p,a,o,ident,b] = await Promise.all([
         db.get("produits",`select=*&client_id=eq.${cid}`),
         db.get("avoirs",`select=*&client_id=eq.${cid}&order=date`),
         db.get("objectifs",`select=*&client_id=eq.${cid}`),
         db.get("identification",`select=*&client_id=eq.${cid}`),
+        db.get("biens_immobiliers",`select=*&client_id=eq.${cid}`),
       ]);
-      setProduits(p); setAvoirs(a); setObjectifs(o);
+      setProduits(p); setAvoirs(a); setObjectifs(o); setBiens(b||[]);
       if(ident.length>0) setIdentifications(prev=>({...prev,[cid]:ident[0]}));
       if (o.length>0) {
         const ids = o.map(x=>x.id).join(",");
-        const [j,op] = await Promise.all([
+        const [j,op,ob] = await Promise.all([
           db.get("jalons",`select=*&objectif_id=in.(${ids})`),
           db.get("objectif_produits",`select=*&objectif_id=in.(${ids})`),
+          db.get("objectif_biens",`select=*&objectif_id=in.(${ids})`),
         ]);
-        setJalons(j); setObjProduits(op);
-      } else { setJalons([]); setObjProduits([]); }
+        setJalons(j); setObjProduits(op); setObjBiens(ob||[]);
+      } else { setJalons([]); setObjProduits([]); setObjBiens([]); }
     } catch(e){console.error(e);}
   }
 
@@ -3514,12 +3518,22 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   const color = clientColor(activeIdx>=0?activeIdx:0);
   const lastAvoir = pid => { const a=avoirs.filter(a=>a.produit_id===pid).sort((a,b)=>new Date(b.date)-new Date(a.date)); return a[0]?.montant||0; };
   const patrimoineActuel = produits.reduce((s,p)=>s+lastAvoir(p.id),0);
-  const patrimoineObjectif = oid => { const ids=objProduits.filter(op=>op.objectif_id===oid).map(op=>op.produit_id); return produits.filter(p=>ids.includes(p.id)).reduce((s,p)=>s+lastAvoir(p.id),0); };
+  const bienNet = b => { const det=(b.pct_detention!=null?b.pct_detention:100)/100; return ((b.valorisation_actuelle||b.prix_achat||0)-(b.capital_restant_du||0))*det; };
+  const patrimoineObjectif = oid => {
+    const pids=objProduits.filter(op=>op.objectif_id===oid).map(op=>op.produit_id);
+    const bids=objBiens.filter(ob=>ob.objectif_id===oid).map(ob=>ob.bien_id);
+    return produits.filter(p=>pids.includes(p.id)).reduce((s,p)=>s+lastAvoir(p.id),0)
+         + biens.filter(b=>bids.includes(b.id)).reduce((s,b)=>s+bienNet(b),0);
+  };
   const parCategorie = CATEGORIES.map(cat=>({ name:cat, value:produits.filter(p=>p.categorie===cat).reduce((s,p)=>s+lastAvoir(p.id),0), color:CAT_COLORS[cat] })).filter(c=>c.value>0);
   const timeline = (() => {
     const byDate={}; avoirs.forEach(a=>{ if(!byDate[a.date])byDate[a.date]={}; byDate[a.date][a.produit_id]=a.montant; });
     const dates=Object.keys(byDate).sort(); const lk={};
-    return dates.map(d=>{ produits.forEach(p=>{ if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id]; }); return { date:fmtDate(d), rawDate: d, ts: new Date(d).getTime(), total:Object.values(lk).reduce((s,v)=>s+v,0) }; });
+    return dates.map(d=>{
+      produits.forEach(p=>{ if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id]; });
+      const immoOffset=biens.reduce((s,b)=>(!b.date_achat||b.date_achat>d)?s:s+bienNet(b),0);
+      return { date:fmtDate(d), rawDate: d, ts: new Date(d).getTime(), total:Object.values(lk).reduce((s,v)=>s+v,0)+immoOffset };
+    });
   })();
 
 
@@ -3535,8 +3549,11 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
       else if (modal.type==="jalon_new") { await db.post("jalons",{...form,montant_cible:parseFloat(form.montant_cible)||null,objectif_id:modal.objectif_id}); await loadClientData(activeClient.id); }
       else if (modal.type==="lier_produit") {
         const already=objProduits.filter(op=>op.objectif_id===modal.objectif_id).map(op=>op.produit_id);
-        for (const pid of modal.selectedProduits.filter(id=>!already.includes(id))) await db.post("objectif_produits",{objectif_id:modal.objectif_id,produit_id:pid});
-        for (const pid of already.filter(id=>!modal.selectedProduits.includes(id))) { const op=objProduits.find(x=>x.objectif_id===modal.objectif_id&&x.produit_id===pid); if(op) await db.del("objectif_produits",op.id); }
+        for (const pid of (modal.selectedProduits||[]).filter(id=>!already.includes(id))) await db.post("objectif_produits",{objectif_id:modal.objectif_id,produit_id:pid});
+        for (const pid of already.filter(id=>!(modal.selectedProduits||[]).includes(id))) { const op=objProduits.find(x=>x.objectif_id===modal.objectif_id&&x.produit_id===pid); if(op) await db.del("objectif_produits",op.id); }
+        const alreadyB=objBiens.filter(ob=>ob.objectif_id===modal.objectif_id).map(ob=>ob.bien_id);
+        for (const bid of (modal.selectedBiens||[]).filter(id=>!alreadyB.includes(id))) await db.post("objectif_biens",{objectif_id:modal.objectif_id,bien_id:bid});
+        for (const bid of alreadyB.filter(id=>!(modal.selectedBiens||[]).includes(id))) { const ob=objBiens.find(x=>x.objectif_id===modal.objectif_id&&x.bien_id===bid); if(ob) await db.del("objectif_biens",ob.id); }
         await loadClientData(activeClient.id);
       }
       setModal(null);
@@ -3765,6 +3782,8 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                         const objJalons=jalons.filter(j=>j.objectif_id===obj.id);
                         const likedIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
                         const likedProds=produits.filter(p=>likedIds.includes(p.id));
+                        const likedBienIds=objBiens.filter(ob=>ob.objectif_id===obj.id).map(ob=>ob.bien_id);
+                        const likedBiensObj=biens.filter(b=>likedBienIds.includes(b.id));
                         const patObj=patrimoineObjectif(obj.id);
                         const prog=pct(patObj,obj.montant_cible);
                         const ocol=COLORS[(oi+1)%COLORS.length];
@@ -3781,11 +3800,14 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                               </div>
                               <div style={{marginBottom:10}}>
                                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                                  <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
-                                  <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
+                                  <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits & biens liés</span>
+                                  <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds,selectedBiens:likedBienIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                                 </div>
-                                {likedProds.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit lié</div>:
-                                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
+                                {likedProds.length===0&&likedBiensObj.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit ou bien lié</div>:
+                                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                    {likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} — {fmt(lastAvoir(p.id))}</div>)}
+                                    {likedBiensObj.map(b=><div key={b.id} style={{padding:"3px 10px",background:"#8B7BAB15",border:"1px solid #8B7BAB30",borderRadius:20,fontSize:11,color:"#8B7BAB"}}>🏠 {b.nom} — {fmt(bienNet(b))}</div>)}
+                                  </div>}
                               </div>
                               <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginBottom:5}}>
                                 <span>{fmt(patObj)} liés</span>
@@ -3913,20 +3935,33 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Ouvrir un PEA")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA Bourse Direct")}{inp("moyens","Moyens","text","200€/mois dès janvier")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits qui contribuent à cet objectif :</div>
+                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits et biens qui contribuent à cet objectif :</div>
                 {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                   <div key={cat} style={{marginBottom:12}}>
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
-                        <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:theme.inputBg,border:`1px solid ${checked?CAT_COLORS[cat]+"40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:theme.bg4,border:`1.5px solid ${checked?CAT_COLORS[cat]:theme.border2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        <span style={{fontSize:12,color:checked?theme.text:theme.text3}}>{p.nom}</span>
                         <span style={{fontSize:11,color:theme.text4,marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
                     );})}
                   </div>
                 );})}
+                {biens.length>0&&(
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:9,color:"#8B7BAB",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>Biens immobiliers</div>
+                    {biens.map(b=>{const checked=(modal.selectedBiens||[]).includes(b.id);return(
+                      <div key={b.id} onClick={()=>{const cur=modal.selectedBiens||[];const next=checked?cur.filter(id=>id!==b.id):[...cur,b.id];setModal(m=>({...m,selectedBiens:next}));}}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?"#8B7BAB10":theme.inputBg,border:`1px solid ${checked?"#8B7BAB40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?"#8B7BAB":theme.bg4,border:`1.5px solid ${checked?"#8B7BAB":theme.border2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",flexShrink:0}}>{checked?"✓":""}</div>
+                        <span style={{fontSize:12,color:checked?theme.text:theme.text3}}>🏠 {b.nom}</span>
+                        <span style={{fontSize:11,color:"#8B7BAB",marginLeft:"auto"}}>{fmt(bienNet(b))}</span>
+                      </div>
+                    );})}
+                  </div>
+                )}
               </div>
             )}
             <div style={{display:"flex",gap:8}}>
@@ -3951,6 +3986,8 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
+  const [biens, setBiens] = useState([]);
+  const [objBiens, setObjBiens] = useState([]);
   const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
@@ -3971,19 +4008,21 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
 
   async function loadData(cid) {
     try {
-      const [p,a,o] = await Promise.all([
+      const [p,a,o,b] = await Promise.all([
         db.get("produits",`select=*&client_id=eq.${cid}`),
         db.get("avoirs",`select=*&client_id=eq.${cid}&order=date`),
         db.get("objectifs",`select=*&client_id=eq.${cid}`),
+        db.get("biens_immobiliers",`select=*&client_id=eq.${cid}`),
       ]);
-      setProduits(p); setAvoirs(a); setObjectifs(o);
+      setProduits(p); setAvoirs(a); setObjectifs(o); setBiens(b||[]);
       if (o.length>0) {
         const ids=o.map(x=>x.id).join(",");
-        const [j,op]=await Promise.all([
+        const [j,op,ob]=await Promise.all([
           db.get("jalons",`select=*&objectif_id=in.(${ids})`),
           db.get("objectif_produits",`select=*&objectif_id=in.(${ids})`),
+          db.get("objectif_biens",`select=*&objectif_id=in.(${ids})`),
         ]);
-        setJalons(j); setObjProduits(op);
+        setJalons(j); setObjProduits(op); setObjBiens(ob||[]);
       }
     } catch(e){console.error(e);}
   }
@@ -3992,12 +4031,22 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const color = "#C9A96E";
   const lastAvoir = pid => { const a=avoirs.filter(a=>a.produit_id===pid).sort((a,b)=>new Date(b.date)-new Date(a.date)); return a[0]?.montant||0; };
   const patrimoineTotal = produits.reduce((s,p)=>s+lastAvoir(p.id),0);
-  const patrimoineObj = oid => { const ids=objProduits.filter(op=>op.objectif_id===oid).map(op=>op.produit_id); return produits.filter(p=>ids.includes(p.id)).reduce((s,p)=>s+lastAvoir(p.id),0); };
+  const bienNet = b => { const det=(b.pct_detention!=null?b.pct_detention:100)/100; return ((b.valorisation_actuelle||b.prix_achat||0)-(b.capital_restant_du||0))*det; };
+  const patrimoineObj = oid => {
+    const pids=objProduits.filter(op=>op.objectif_id===oid).map(op=>op.produit_id);
+    const bids=objBiens.filter(ob=>ob.objectif_id===oid).map(ob=>ob.bien_id);
+    return produits.filter(p=>pids.includes(p.id)).reduce((s,p)=>s+lastAvoir(p.id),0)
+         + biens.filter(b=>bids.includes(b.id)).reduce((s,b)=>s+bienNet(b),0);
+  };
   const parCategorie = CATEGORIES.map(cat=>({name:cat,value:produits.filter(p=>p.categorie===cat).reduce((s,p)=>s+lastAvoir(p.id),0),color:CAT_COLORS[cat]})).filter(c=>c.value>0);
   const timeline = (() => {
     const byDate={}; avoirs.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
     const dates=Object.keys(byDate).sort(); const lk={};
-    return dates.map(d=>{produits.forEach(p=>{if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id];});return{date:fmtDate(d),rawDate:d,ts:new Date(d).getTime(),total:Object.values(lk).reduce((s,v)=>s+v,0)};});
+    return dates.map(d=>{
+      produits.forEach(p=>{if(byDate[d][p.id]!==undefined)lk[p.id]=byDate[d][p.id];});
+      const immoOffset=biens.reduce((s,b)=>(!b.date_achat||b.date_achat>d)?s:s+bienNet(b),0);
+      return{date:fmtDate(d),rawDate:d,ts:new Date(d).getTime(),total:Object.values(lk).reduce((s,v)=>s+v,0)+immoOffset};
+    });
   })();
 
   async function saveModal() {
@@ -4010,8 +4059,11 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
       else if (modal.type==="jalon_new") { await db.post("jalons",{...form,montant_cible:parseFloat(form.montant_cible)||null,objectif_id:modal.objectif_id}); }
       else if (modal.type==="lier_produit") {
         const already=objProduits.filter(op=>op.objectif_id===modal.objectif_id).map(op=>op.produit_id);
-        for (const pid of modal.selectedProduits.filter(id=>!already.includes(id))) await db.post("objectif_produits",{objectif_id:modal.objectif_id,produit_id:pid});
-        for (const pid of already.filter(id=>!modal.selectedProduits.includes(id))) { const op=objProduits.find(x=>x.objectif_id===modal.objectif_id&&x.produit_id===pid); if(op) await db.del("objectif_produits",op.id); }
+        for (const pid of (modal.selectedProduits||[]).filter(id=>!already.includes(id))) await db.post("objectif_produits",{objectif_id:modal.objectif_id,produit_id:pid});
+        for (const pid of already.filter(id=>!(modal.selectedProduits||[]).includes(id))) { const op=objProduits.find(x=>x.objectif_id===modal.objectif_id&&x.produit_id===pid); if(op) await db.del("objectif_produits",op.id); }
+        const alreadyB=objBiens.filter(ob=>ob.objectif_id===modal.objectif_id).map(ob=>ob.bien_id);
+        for (const bid of (modal.selectedBiens||[]).filter(id=>!alreadyB.includes(id))) await db.post("objectif_biens",{objectif_id:modal.objectif_id,bien_id:bid});
+        for (const bid of alreadyB.filter(id=>!(modal.selectedBiens||[]).includes(id))) { const ob=objBiens.find(x=>x.objectif_id===modal.objectif_id&&x.bien_id===bid); if(ob) await db.del("objectif_biens",ob.id); }
       }
       await reload(); setModal(null);
     } catch(e){alert("Erreur : "+e.message);}
@@ -4152,6 +4204,8 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                 const objJalons=jalons.filter(j=>j.objectif_id===obj.id);
                 const likedIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
                 const likedProds=produits.filter(p=>likedIds.includes(p.id));
+                const likedBienIds=objBiens.filter(ob=>ob.objectif_id===obj.id).map(ob=>ob.bien_id);
+                const likedBiensObj=biens.filter(b=>likedBienIds.includes(b.id));
                 const patObj=patrimoineObj(obj.id);
                 const prog=pct(patObj,obj.montant_cible);
                 const ocol=COLORS[(oi+1)%COLORS.length];
@@ -4168,11 +4222,14 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                       </div>
                       <div style={{marginBottom:10}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                          <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
-                          <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
+                          <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits & biens liés</span>
+                          <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds,selectedBiens:likedBienIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                         </div>
-                        {likedProds.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit lié</div>:
-                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
+                        {likedProds.length===0&&likedBiensObj.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit ou bien lié</div>:
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                            {likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} — {fmt(lastAvoir(p.id))}</div>)}
+                            {likedBiensObj.map(b=><div key={b.id} style={{padding:"3px 10px",background:"#8B7BAB15",border:"1px solid #8B7BAB30",borderRadius:20,fontSize:11,color:"#8B7BAB"}}>🏠 {b.nom} — {fmt(bienNet(b))}</div>)}
+                          </div>}
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginBottom:5}}>
                         <span>{fmt(patObj)} accumulés</span>
@@ -4265,20 +4322,33 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Étape 1")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA")}{inp("moyens","Comment y arriver","text","200€/mois")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits liés à cet objectif :</div>
+                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits et biens liés à cet objectif :</div>
                 {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                   <div key={cat} style={{marginBottom:12}}>
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
-                        <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:theme.inputBg,border:`1px solid ${checked?CAT_COLORS[cat]+"40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:theme.bg4,border:`1.5px solid ${checked?CAT_COLORS[cat]:theme.border2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        <span style={{fontSize:12,color:checked?theme.text:theme.text3}}>{p.nom}</span>
                         <span style={{fontSize:11,color:theme.text4,marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
                     );})}
                   </div>
                 );})}
+                {biens.length>0&&(
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:9,color:"#8B7BAB",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>Biens immobiliers</div>
+                    {biens.map(b=>{const checked=(modal.selectedBiens||[]).includes(b.id);return(
+                      <div key={b.id} onClick={()=>{const cur=modal.selectedBiens||[];const next=checked?cur.filter(id=>id!==b.id):[...cur,b.id];setModal(m=>({...m,selectedBiens:next}));}}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?"#8B7BAB10":theme.inputBg,border:`1px solid ${checked?"#8B7BAB40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?"#8B7BAB":theme.bg4,border:`1.5px solid ${checked?"#8B7BAB":theme.border2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",flexShrink:0}}>{checked?"✓":""}</div>
+                        <span style={{fontSize:12,color:checked?theme.text:theme.text3}}>🏠 {b.nom}</span>
+                        <span style={{fontSize:11,color:"#8B7BAB",marginLeft:"auto"}}>{fmt(bienNet(b))}</span>
+                      </div>
+                    );})}
+                  </div>
+                )}
               </div>
             )}
             <div style={{display:"flex",gap:8}}>
