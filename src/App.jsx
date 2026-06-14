@@ -226,23 +226,23 @@ function LoginPage({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0C0C0E", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: theme.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
       <style>{CSS + `input:focus{border-color:#C9A96E!important}`}</style>
-      <div style={{ width: 380, padding: 40, background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 16 }}>
+      <div style={{ width: 380, padding: 40, background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 16 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 9, letterSpacing: "0.25em", color: "#444", textTransform: "uppercase", marginBottom: 6 }}>Bienvenue sur</div>
+          <div style={{ fontSize: 9, letterSpacing: "0.25em", color: theme.text5, textTransform: "uppercase", marginBottom: 6 }}>Bienvenue sur</div>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 36, color: "#C9A96E", letterSpacing: "0.05em", marginBottom: 8 }}>Rob'Invest</div>
-          <div style={{ fontSize: 12, color: "#555" }}>Connecte-toi pour accéder à ton espace</div>
+          <div style={{ fontSize: 12, color: theme.text4 }}>Connecte-toi pour accéder à ton espace</div>
         </div>
         <form onSubmit={handleLogin}>
           {[["email","Email","email","toi@email.fr"],["password","Mot de passe","password","••••••••"]].map(([k,l,t,ph]) => (
             <div key={k} style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 6 }}>{l}</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 6 }}>{l}</div>
               <input type={t} placeholder={ph} required value={k==="email"?email:password} onChange={e => k==="email"?setEmail(e.target.value):setPassword(e.target.value)}
-                style={{ width:"100%",background:"#141416",border:"1px solid #222",borderRadius:8,padding:"11px 14px",color:"#CCC",fontSize:13,transition:"border-color 0.2s" }} />
+                style={{ width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,padding:"11px 14px",color:theme.text2,fontSize:13,transition:"border-color 0.2s" }} />
             </div>
           ))}
-          {error && <div style={{ background:"#2F1010",border:"1px solid #E07A7A30",borderRadius:8,padding:"10px 14px",color:"#E07A7A",fontSize:12,marginBottom:16 }}>{error}</div>}
+          {error && <div style={{ background:theme.redBg,border:"1px solid #E07A7A30",borderRadius:8,padding:"10px 14px",color:"#E07A7A",fontSize:12,marginBottom:16 }}>{error}</div>}
           <button type="submit" disabled={loading}
             style={{ width:"100%",padding:12,background:"#C9A96E",border:"none",borderRadius:8,cursor:loading?"not-allowed":"pointer",color:"#0C0C0E",fontSize:13,fontWeight:600,opacity:loading?0.7:1 }}>
             {loading ? "Connexion..." : "Se connecter"}
@@ -387,7 +387,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
     const col = sectionColor[categorie];
     return (
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 14 }}>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginBottom: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: col }} />
@@ -399,14 +399,14 @@ function BudgetSection({ db, clientId, isReadOnly }) {
               style={{ padding:"4px 10px",background:`${col}20`,border:`1px solid ${col}40`,borderRadius:6,cursor:"pointer",color:col,fontSize:10 }}>+ Ajouter</button>}
           </div>
         </div>
-        {items.length === 0 && <div style={{ fontSize: 11, color: "#444", fontStyle: "italic" }}>Aucun élément</div>}
+        {items.length === 0 && <div style={{ fontSize: 11, color: theme.text5, fontStyle: "italic" }}>Aucun élément</div>}
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {items.map(item => (
-            <div key={item.id} className="row" style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"#141416",borderRadius:8,transition:"background 0.15s" }}>
-              <span style={{ fontSize: 12, color: "#CCC" }}>{item.nom}</span>
+            <div key={item.id} className="row" style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:theme.inputBg,borderRadius:8,transition:"background 0.15s" }}>
+              <span style={{ fontSize: 12, color: theme.text2 }}>{item.nom}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#E2DDD6" }}>{fmt(item.montant)}</span>
-                {!isReadOnly && <button onClick={() => delBudget(item.id)} style={{ background:"none",border:"none",cursor:"pointer",color:"#555",fontSize:11 }}>✕</button>}
+                <span style={{ fontSize: 13, fontWeight: 500, color: theme.text }}>{fmt(item.montant)}</span>
+                {!isReadOnly && <button onClick={() => delBudget(item.id)} style={{ background:"none",border:"none",cursor:"pointer",color:theme.text4,fontSize:11 }}>✕</button>}
               </div>
             </div>
           ))}
@@ -430,7 +430,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
       <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
         {["actuel","cible"].map(t => (
           <button key={t} onClick={() => setBudgetType(t)}
-            style={{ padding:"8px 20px",background:budgetType===t?"#C9A96E":"#141416",border:`1px solid ${budgetType===t?"#C9A96E":"#222"}`,borderRadius:8,cursor:"pointer",color:budgetType===t?"#0C0C0E":"#777",fontSize:12,fontWeight:budgetType===t?600:400,fontFamily:"inherit" }}>
+            style={{ padding:"8px 20px",background:budgetType===t?"#C9A96E":theme.inputBg,border:`1px solid ${budgetType===t?"#C9A96E":theme.border}`,borderRadius:8,cursor:"pointer",color:budgetType===t?"#0C0C0E":theme.text4,fontSize:12,fontWeight:budgetType===t?600:400,fontFamily:"inherit" }}>
             Budget {t === "actuel" ? "actuel" : "cible"}
           </button>
         ))}
@@ -459,7 +459,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
             <div style={{ background: "#1A1A2F", border: "1px solid #8B7BAB30", borderRadius: 12, padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
               <div>
                 <div style={{ fontSize: 9, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 3 }}>Épargne restante après virements</div>
-                <div style={{ fontSize: 11, color: "#555" }}>{fmt(epargne)} − {fmt(totalVirements)} virements</div>
+                <div style={{ fontSize: 11, color: theme.text4 }}>{fmt(epargne)} − {fmt(totalVirements)} virements</div>
               </div>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: (epargne - totalVirements) >= 0 ? "#8B7BAB" : "#E07A7A" }}>
                 {fmt(epargne - totalVirements)}
@@ -469,18 +469,18 @@ function BudgetSection({ db, clientId, isReadOnly }) {
         </div>
 
         {/* Graphique */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Visualisation</div>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Visualisation</div>
           {totalRevenus > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData} barSize={28}>
                 <XAxis dataKey="name" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#1A1A1E",border:"none",borderRadius:6,fontSize:11,color:"#E2DDD6" }} />
+                <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:theme.text }} />
                 <Bar dataKey="val" radius={[4,4,0,0]}>{chartData.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar>
               </BarChart>
             </ResponsiveContainer>
-          ) : <div style={{ color:"#444",fontSize:12,textAlign:"center",paddingTop:40 }}>Ajoute des revenus pour voir le graphique</div>}
+          ) : <div style={{ color:theme.text5,fontSize:12,textAlign:"center",paddingTop:40 }}>Ajoute des revenus pour voir le graphique</div>}
 
           {/* Résumé chiffres */}
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -491,7 +491,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
               { label: "Virements épargne", val: totalVirements, color: "#8B7BAB" },
               { label: "Épargne nette dispo.", val: epargne - totalVirements, color: (epargne-totalVirements)>=0?"#6AAED4":"#E07A7A" },
             ].map((r,i) => (
-              <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1A1A1E" }}>
+              <div key={i} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${theme.border}` }}>
                 <div style={{ display:"flex",alignItems:"center",gap:6 }}>
                   <div style={{ width:6,height:6,borderRadius:"50%",background:r.color }} />
                   <span style={{ fontSize:11,color:"#666" }}>{r.label}</span>
@@ -506,19 +506,19 @@ function BudgetSection({ db, clientId, isReadOnly }) {
       {/* Modal ajout */}
       {modal && (
         <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200 }}>
-          <div style={{ background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:360 }}>
+          <div style={{ background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:14,padding:28,width:360 }}>
             <div style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20 }}>
               Ajouter -- {sectionLabel[modal.categorie]}
             </div>
             <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:10,color:"#555",marginBottom:5 }}>Libellé *</div>
+              <div style={{ fontSize:10,color:theme.text4,marginBottom:5 }}>Libellé *</div>
               <input placeholder={modal.categorie==="revenu"?"Salaire, freelance...":"Loyer, abonnement..."} value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))}
-                style={{ width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12 }} />
+                style={{ width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12 }} />
             </div>
             <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:10,color:"#555",marginBottom:5 }}>Montant mensuel (€) *</div>
+              <div style={{ fontSize:10,color:theme.text4,marginBottom:5 }}>Montant mensuel (€) *</div>
               <input type="number" placeholder="0" value={form.montant} onChange={e=>setForm(p=>({...p,montant:e.target.value}))}
-                style={{ width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12 }} />
+                style={{ width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12 }} />
             </div>
             <div style={{ display:"flex",gap:8 }}>
               <button onClick={saveBudget} disabled={saving}
@@ -526,7 +526,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
                 {saving?"...":"Enregistrer"}
               </button>
               <button onClick={()=>setModal(null)}
-                style={{ padding:"10px 16px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12 }}>
+                style={{ padding:"10px 16px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:12 }}>
                 Annuler
               </button>
             </div>
@@ -674,12 +674,12 @@ function BourseSection({ db, clientId, isReadOnly }) {
       {/* KPIs */}
       <div className="grid-3" style={{ marginBottom: 20 }}>
         {[
-          { label: "Valeur investie", val: fmt(totalInvesti), color: "#E2DDD6" },
+          { label: "Valeur investie", val: fmt(totalInvesti), color: theme.text },
           { label: "Valorisation actuelle", val: fmt(totalValorise), color: totalPV >= 0 ? "#5EBF7A" : "#E07A7A" },
           { label: "Plus/Moins value", val: `${fmt(totalPV)} (${fmtPct(totalPVPct)})`, color: pvColor(totalPV) },
         ].map((k, i) => (
-          <div key={i} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
+          <div key={i} style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, color: k.color }}>{k.val}</div>
           </div>
         ))}
@@ -688,32 +688,32 @@ function BourseSection({ db, clientId, isReadOnly }) {
 
 
       {/* Header table */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${theme.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>
+            <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>
               Positions ({actionsFiltrees.length}/{actions.length}) {loadingQuotes && <span style={{ color: "#C9A96E", marginLeft: 8 }}>↻ Actualisation...</span>}
             </div>
             <input placeholder="🔍 Filtrer par nom ou ticker..." value={filterText} onChange={e => setFilterText(e.target.value)}
-              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit", width: 200 }} />
+              style={{ padding: "5px 10px", background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 6, color: theme.text2, fontSize: 11, fontFamily: "inherit", width: 200 }} />
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => fetchQuotes(actions)} style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10 }}>↻ Actualiser</button>
+            <button onClick={() => fetchQuotes(actions)} style={{ padding: "5px 12px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 6, cursor: "pointer", color: theme.text3, fontSize: 10 }}>↻ Actualiser</button>
             {!isReadOnly && <button onClick={() => { setEditAction(null); setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] }); setModal("new"); }} style={{ padding: "5px 12px", background: "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>}
           </div>
         </div>
 
         {actions.length === 0 && (
-          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>
+          <div style={{ padding: 28, color: theme.text5, fontSize: 13, textAlign: "center" }}>
             Aucune position. {!isReadOnly && "Ajoute ta première action."}
           </div>
         )}
 
         {/* Desktop table header */}
         {actions.length > 0 && (
-          <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "8px 20px", borderBottom: "1px solid #1A1A1E" }}>
+          <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "8px 20px", borderBottom: `1px solid ${theme.border}` }}>
             {["Titre", "Ticker", "Qté", "Px achat", "Px actuel", "Valeur", "+/- Value"].map((h, i) => (
-              <div key={i} style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em" }}>{h}</div>
+              <div key={i} style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em" }}>{h}</div>
             ))}
           </div>
         )}
@@ -727,20 +727,20 @@ function BourseSection({ db, clientId, isReadOnly }) {
           const col = pv !== null ? pvColor(pv) : "#888";
 
           return (
-            <div key={a.id} className="row" style={{ borderBottom: "1px solid #1A1A1E", transition: "background 0.15s" }}>
+            <div key={a.id} className="row" style={{ borderBottom: `1px solid ${theme.border}`, transition: "background 0.15s" }}>
               {/* Desktop row */}
               <div className="hide-mob" style={{ display: "grid", gridTemplateColumns: "1fr 0.6fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 0.5fr", padding: "12px 20px", alignItems: "center" }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#E2DDD6" }}>{a.nom || a.ticker}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: theme.text }}>{a.nom || a.ticker}</div>
                 <div style={{ fontSize: 11, color: "#C9A96E", fontWeight: 600 }}>{a.ticker}</div>
-                <div style={{ fontSize: 12, color: "#CCC" }}>{a.nombre}</div>
-                <div style={{ fontSize: 12, color: "#CCC" }}>{fmt(a.prix_achat)}</div>
+                <div style={{ fontSize: 12, color: theme.text2 }}>{a.nombre}</div>
+                <div style={{ fontSize: 12, color: theme.text2 }}>{fmt(a.prix_achat)}</div>
                 <div style={{ fontSize: 12, color: prixActuel ? "#E2DDD6" : "#555" }}>{prixActuel ? fmt(prixActuel) : "--"}{q && <span style={{ fontSize: 9, color: pvColor(q.change), marginLeft: 4 }}>{fmtPct(q.change)}</span>}</div>
-                <div style={{ fontSize: 12, color: "#E2DDD6" }}>{valeur ? fmt(valeur) : "--"}</div>
+                <div style={{ fontSize: 12, color: theme.text }}>{valeur ? fmt(valeur) : "--"}</div>
                 <div style={{ fontSize: 12, color: col, fontWeight: 500 }}>{pv !== null ? `${fmt(pv)} (${fmtPct(pvPct)})` : "--"}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {!isReadOnly && <>
-                    <button onClick={() => openEdit(a)} style={{ padding: "3px 8px", background: "#1A1A1E", border: "1px solid #2A2A2A", borderRadius: 5, cursor: "pointer", color: "#888", fontSize: 10 }}>✏️</button>
-                    <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11 }}>✕</button>
+                    <button onClick={() => openEdit(a)} style={{ padding: "3px 8px", background: theme.bg4, border: `1px solid ${theme.border2}`, borderRadius: 5, cursor: "pointer", color: theme.text3, fontSize: 10 }}>✏️</button>
+                    <button onClick={() => delAction(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: theme.text4, fontSize: 11 }}>✕</button>
                   </>}
                 </div>
               </div>
@@ -750,7 +750,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
                 <div style={{ padding: "12px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: "#E2DDD6" }}>{a.nom || a.ticker}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: theme.text }}>{a.nom || a.ticker}</div>
                       <div style={{ fontSize: 10, color: "#C9A96E" }}>{a.ticker} · {a.nombre} actions</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -758,7 +758,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
                       {pv !== null && <div style={{ fontSize: 11, color: col }}>{fmt(pv)} ({fmtPct(pvPct)})</div>}
                     </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#555" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: theme.text4 }}>
                     <span>Px achat : {fmt(a.prix_achat)}</span>
                     <span>Px actuel : {prixActuel ? fmt(prixActuel) : "--"}</span>
 
@@ -771,14 +771,14 @@ function BourseSection({ db, clientId, isReadOnly }) {
       </div>
 
       {/* Note ticker */}
-      <div style={{ fontSize: 10, color: "#444", marginTop: 10, fontStyle: "italic" }}>
+      <div style={{ fontSize: 10, color: theme.text5, marginTop: 10, fontStyle: "italic" }}>
         Exemples de tickers : AAPL (Apple), MC.PA (LVMH), TTE.PA (TotalEnergies), MSFT (Microsoft), AIR.PA (Airbus)
       </div>
 
       {/* Modal ajout/edit */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 420, maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-box" style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 28, width: 420, maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>{modal === "edit" ? "Modifier la position" : "Nouvelle position"}</div>
             {[
               ["ticker", "Ticker * (ex: AAPL, MC.PA)", "text", "AAPL"],
@@ -787,19 +787,19 @@ function BourseSection({ db, clientId, isReadOnly }) {
               ["prix_achat", "Prix d'achat unitaire (€) *", "number", "150.00"],
             ].map(([k, l, t, ph]) => (
               <div key={k} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
+                <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>{l}</div>
                 <input type={t} placeholder={ph} value={form[k] || ""} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                  style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
               </div>
             ))}
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Date d'achat</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Date d'achat</div>
               <input type="date" value={form.date_achat} onChange={e => setForm(p => ({ ...p, date_achat: e.target.value }))}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={saveAction} disabled={saving} style={{ flex: 1, padding: 10, background: "#C9A96E", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600 }}>{saving ? "..." : "Enregistrer"}</button>
-              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12 }}>Annuler</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: "pointer", color: theme.text3, fontSize: 12 }}>Annuler</button>
             </div>
           </div>
         </div>
@@ -851,7 +851,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
 
   const Field = ({ label, value, icon = "" }) => (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>{icon} {label}</div>
+      <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>{icon} {label}</div>
       <div style={{ fontSize: 13, color: value ? "#E2DDD6" : "#444", fontStyle: value ? "normal" : "italic" }}>{value || "Non renseigné"}</div>
     </div>
   );
@@ -861,7 +861,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20 }}>Identification</div>
         <button onClick={() => setEditing(!editing)}
-          style={{ padding: "7px 16px", background: editing ? "#1A1A1E" : "#C9A96E", border: editing ? "1px solid #333" : "none", borderRadius: 8, cursor: "pointer", color: editing ? "#777" : "#0C0C0E", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
+          style={{ padding: "7px 16px", background: editing ? theme.inputBg : "#C9A96E", border: editing ? `1px solid ${theme.border2}` : "none", borderRadius: 8, cursor: "pointer", color: editing ? "#777" : "#0C0C0E", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
           {editing ? "Annuler" : "✏️ Modifier"}
         </button>
       </div>
@@ -869,92 +869,92 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
       {editing ? (
         <div key="ident-edit">
           <div className="grid-2" style={{ marginBottom: 0 }}>
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Informations personnelles</div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Date de naissance</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Date de naissance</div>
               <input type="date" placeholder="" defaultValue={fv("date_naissance")} onChange={e => f("date_naissance", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Profession</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Profession</div>
               <input type="text" placeholder="Ingénieur, Chef d'entreprise..." defaultValue={fv("profession")} onChange={e => f("profession", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Situation personnelle</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Situation personnelle</div>
               <input type="text" placeholder="Marié, 2 enfants..." defaultValue={fv("situation_personnelle")} onChange={e => f("situation_personnelle", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Nombre d'enfants</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Nombre d'enfants</div>
               <input type="number" placeholder="0" defaultValue={fv("nb_enfants")} onChange={e => f("nb_enfants", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Téléphone</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Téléphone</div>
               <input type="text" placeholder="+33 6 00 00 00 00" defaultValue={fv("telephone")} onChange={e => f("telephone", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Email</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Email</div>
               <input type="email" placeholder="prenom@email.fr" defaultValue={fv("email")} onChange={e => f("email", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
             </div>
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Adresse</div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Adresse</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Adresse</div>
               <input type="text" placeholder="12 rue de la Paix" defaultValue={fv("adresse")} onChange={e => f("adresse", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Code postal</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Code postal</div>
               <input type="text" placeholder="75001" defaultValue={fv("code_postal")} onChange={e => f("code_postal", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Ville</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Ville</div>
               <input type="text" placeholder="Paris" defaultValue={fv("ville")} onChange={e => f("ville", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
               <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Pays</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Pays</div>
               <input type="text" placeholder="France" defaultValue={fv("pays")} onChange={e => f("pays", e.target.value)}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
             </div>
           </div>
 
-          <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginTop: 14 }}>
+          <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginTop: 14 }}>
             <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Profil investisseur</div>
             <div className="grid-2">
               <div>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Profil de risque</div>
+                <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Profil de risque</div>
                 <select defaultValue={fv("profil_risque") || "Modéré"} onChange={e => f("profil_risque", e.target.value)}
-                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
+                  style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
                   {PROFILS.map(p => <option key={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Horizon d'investissement</div>
+                <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Horizon d'investissement</div>
                 <select defaultValue={fv("horizon_investissement")} onChange={e => f("horizon_investissement", e.target.value)}
-                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
+                  style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit", marginBottom: 14 }}>
                   <option value="">Sélectionner...</option>
                   {HORIZONS.map(h => <option key={h}>{h}</option>)}
                 </select>
               </div>
             </div>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Objectif global</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Objectif global</div>
               <textarea defaultValue={fv("objectif_global")} onChange={e => f("objectif_global", e.target.value)} placeholder="Construire un patrimoine pour la retraite, financer les études des enfants..."
-                style={{ width: "100%", minHeight: 70, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
+                style={{ width: "100%", minHeight: 70, background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
             </div>
             <div>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Description / Notes libres</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Description / Notes libres</div>
               <textarea defaultValue={fv("description")} onChange={e => f("description", e.target.value)} placeholder="Informations complémentaires..."
-                style={{ width: "100%", minHeight: 80, background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
+                style={{ width: "100%", minHeight: 80, background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, lineHeight: 1.5, resize: "none", fontFamily: "inherit" }} />
             </div>
           </div>
 
@@ -964,7 +964,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
             <button onClick={() => setEditing(false)}
-              style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>
+              style={{ padding: "10px 16px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit" }}>
               Annuler
             </button>
           </div>
@@ -972,7 +972,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
       ) : (
         <div>
           <div className="grid-2" style={{ marginBottom: 14 }}>
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Informations personnelles</div>
               <Field label="Date de naissance" value={data?.date_naissance ? new Date(data.date_naissance).toLocaleDateString("fr-FR") : null} />
               <Field label="Profession" value={data?.profession} />
@@ -981,13 +981,13 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
               <Field label="Téléphone" value={data?.telephone} />
               <Field label="Email" value={data?.email} />
             </div>
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Adresse</div>
               <Field label="Adresse" value={data?.adresse} />
               <Field label="Code postal" value={data?.code_postal} />
               <Field label="Ville" value={data?.ville} />
               <Field label="Pays" value={data?.pays} />
-              <div style={{ marginTop: 16, borderTop: "1px solid #1A1A1E", paddingTop: 14 }}>
+              <div style={{ marginTop: 16, borderTop: `1px solid ${theme.border}`, paddingTop: 14 }}>
                 <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Profil investisseur</div>
                 <Field label="Profil de risque" value={data?.profil_risque} />
                 <Field label="Horizon d'investissement" value={data?.horizon_investissement} />
@@ -995,12 +995,12 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
             </div>
           </div>
           {(data?.objectif_global || data?.description) && (
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-              {data?.objectif_global && <><div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Objectif global</div><div style={{ fontSize: 13, color: "#E2DDD6", lineHeight: 1.6, marginBottom: 14 }}>{data.objectif_global}</div></>}
-              {data?.description && <><div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Notes</div><div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.6 }}>{data.description}</div></>}
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
+              {data?.objectif_global && <><div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Objectif global</div><div style={{ fontSize: 13, color: theme.text, lineHeight: 1.6, marginBottom: 14 }}>{data.objectif_global}</div></>}
+              {data?.description && <><div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Notes</div><div style={{ fontSize: 13, color: theme.text4, lineHeight: 1.6 }}>{data.description}</div></>}
             </div>
           )}
-          {!data && <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "30px 0" }}>Aucune information renseignée. Clique sur "Modifier" pour commencer.</div>}
+          {!data && <div style={{ color: theme.text5, fontSize: 13, textAlign: "center", padding: "30px 0" }}>Aucune information renseignée. Clique sur "Modifier" pour commencer.</div>}
         </div>
       )}
     </div>
@@ -1150,18 +1150,18 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           <div style={{ fontSize: 9, color: "#5EBF7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {CURRENT_YEAR}</div>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#5EBF7A" }}>{fmt(totalAnneeEnCours)}</div>
         </div>
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Total global</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalGlobal)}</div>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Total global</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: theme.text }}>{fmt(totalGlobal)}</div>
         </div>
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 10, padding: "14px 16px" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {PREV_YEAR}</div>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: "#E2DDD6" }}>{fmt(totalAnneePrecedente)}</div>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>Dividendes {PREV_YEAR}</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: theme.text }}>{fmt(totalAnneePrecedente)}</div>
         </div>
       </div>
 
       {/* Objectif annuel */}
-      <div style={{ background: objectifAtteint ? "#1A2F1F" : "#0F0F11", border: `1px solid ${objectifAtteint ? "#5EBF7A40" : objectifAnnuel > 0 ? "#C9A96E30" : "#1A1A1E"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
+      <div style={{ background: objectifAtteint ? theme.greenBg : theme.bg2, border: `1px solid ${objectifAtteint ? "#5EBF7A40" : objectifAnnuel > 0 ? "#C9A96E30" : theme.border}`, borderRadius: 12, padding: "16px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: objectifAnnuel > 0 ? 14 : 0 }}>
           <div>
             <div style={{ fontSize: 9, color: objectifAtteint ? "#5EBF7A" : "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 4 }}>
@@ -1181,7 +1181,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
             )}
             {!editingObjectif && (
               <button onClick={() => { setObjectifInput(objectifAnnuel || ""); setEditingObjectif(true); }}
-                style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 11, fontFamily: "inherit" }}>
+                style={{ padding: "5px 12px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 6, cursor: "pointer", color: theme.text3, fontSize: 11, fontFamily: "inherit" }}>
                 {objectifAnnuel > 0 ? "✏️ Modifier" : "+ Définir un objectif"}
               </button>
             )}
@@ -1192,10 +1192,10 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input type="number" placeholder="Ex: 5000" value={objectifInput} onChange={e => setObjectifInput(e.target.value)}
               autoFocus
-              style={{ flex: 1, background: "#141416", border: "1px solid #C9A96E50", borderRadius: 7, padding: "9px 12px", color: "#CCC", fontSize: 13, fontFamily: "inherit" }} />
-            <span style={{ fontSize: 12, color: "#555" }}>€/an</span>
+              style={{ flex: 1, background: theme.inputBg, border: "1px solid #C9A96E50", borderRadius: 7, padding: "9px 12px", color: theme.text2, fontSize: 13, fontFamily: "inherit" }} />
+            <span style={{ fontSize: 12, color: theme.text4 }}>€/an</span>
             <button onClick={saveObjectif} style={{ padding: "9px 16px", background: "#C9A96E", border: "none", borderRadius: 7, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>Enregistrer</button>
-            <button onClick={() => setEditingObjectif(false)} style={{ padding: "9px 12px", background: "#141416", border: "1px solid #222", borderRadius: 7, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+            <button onClick={() => setEditingObjectif(false)} style={{ padding: "9px 12px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
           </div>
         )}
 
@@ -1219,7 +1219,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
           return (
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
-                <span style={{ fontSize: 10, color: "#555" }}>
+                <span style={{ fontSize: 10, color: theme.text4 }}>
                   Progression vers {fmt(objectifAnnuel)}/an
                   {estimatedYear && !objectifAtteint && (
                     <span style={{ color: "#C9A96E", marginLeft: 8 }}>Objectif estimé : {estimatedYear}</span>
@@ -1257,7 +1257,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                 </ResponsiveContainer>
               )}
               {!objectifAtteint && totalAnneePrecedente > 0 && (
-                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>
+                <div style={{ fontSize: 10, color: theme.text4, marginTop: 6 }}>
                   Manque {fmt(objectifAnnuel - totalAnneePrecedente)} en {PREV_YEAR}
                   {totalAnneePrecedente > 0 && ` · Croissance nécessaire : +${(((objectifAnnuel / totalAnneePrecedente) - 1) * 100).toFixed(1)}%`}
                 </div>
@@ -1269,8 +1269,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
 
       {/* Graphique */}
       {chartData.length > 0 && (
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Évolution annuelle</div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={chartData} barSize={36}>
               <XAxis dataKey="annee" tick={{ fill: isDark ? "#555" : "#6B6860", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -1283,14 +1283,14 @@ function DividendesSection({ db, clientId, isReadOnly }) {
       )}
 
       {/* Tableau croisé entreprise x année */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid #1A1A1E", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Récapitulatif par entreprise & année</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 20px", borderBottom: `1px solid ${theme.border}`, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Récapitulatif par entreprise & année</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <input placeholder="🔍 Filtrer..." value={filterText} onChange={e => setFilterText(e.target.value)}
-              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit", width: 130 }} />
+              style={{ padding: "5px 10px", background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 6, color: theme.text2, fontSize: 11, fontFamily: "inherit", width: 130 }} />
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              style={{ padding: "5px 10px", background: "#0F0F11", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit" }}>
+              style={{ padding: "5px 10px", background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 6, color: theme.text2, fontSize: 11, fontFamily: "inherit" }}>
               <option value="nom">Trier : A→Z</option>
               <option value="total_desc">Total décroissant</option>
               <option value="total_asc">Total croissant</option>
@@ -1303,13 +1303,13 @@ function DividendesSection({ db, clientId, isReadOnly }) {
         </div>
 
         {entreprises.length === 0 ? (
-          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun dividende enregistré.</div>
+          <div style={{ padding: 28, color: theme.text5, fontSize: 13, textAlign: "center" }}>Aucun dividende enregistré.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
-                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>Entreprise</th>
+                <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>Entreprise</th>
                   {annees.map(a => (
                     <th key={a} style={{ padding: "10px 16px", textAlign: "right", fontSize: 9, color: a === CURRENT_YEAR ? "#5EBF7A" : "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>{a}</th>
                   ))}
@@ -1330,7 +1330,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                   return (
                     <React.Fragment key={support}>
                       {/* Support header row */}
-                      <tr style={{ background: "#141416", borderBottom: "1px solid #1A1A1E", borderTop: "2px solid #2A2A2A" }}>
+                      <tr style={{ background: theme.inputBg, borderBottom: `1px solid ${theme.border}`, borderTop: "2px solid #2A2A2A" }}>
                         <td colSpan={annees.length + 2} style={{ padding: "8px 20px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#8B7BAB" }} />
@@ -1340,8 +1340,8 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                       </tr>
                       {/* Entreprises rows */}
                       {entreprisesSupport.map((e, ei) => (
-                        <tr key={e} style={{ borderBottom: "1px solid #1A1A1E", background: ei % 2 === 0 ? "transparent" : "#0A0A0C" }}>
-                          <td style={{ padding: "9px 20px 9px 30px", color: "#CCC", whiteSpace: "nowrap" }}>{e}</td>
+                        <tr key={e} style={{ borderBottom: `1px solid ${theme.border}`, background: ei % 2 === 0 ? "transparent" : theme.bg }}>
+                          <td style={{ padding: "9px 20px 9px 30px", color: theme.text2, whiteSpace: "nowrap" }}>{e}</td>
                           {annees.map(a => (
                             <td key={a} style={{ padding: "9px 16px", textAlign: "right", color: (matrix[e]?.[a] || 0) > 0 ? "#E2DDD6" : "#333", fontWeight: (matrix[e]?.[a] || 0) > 0 ? 500 : 400 }}>
                               {(matrix[e]?.[a] || 0) > 0 ? fmt(matrix[e][a]) : "--"}
@@ -1351,7 +1351,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
                         </tr>
                       ))}
                       {/* Support subtotal row */}
-                      <tr style={{ borderBottom: "1px solid #2A2A2A", background: "#0A0A0C" }}>
+                      <tr style={{ borderBottom: `1px solid ${theme.border2}`, background: theme.bg }}>
                         <td style={{ padding: "8px 20px", fontSize: 11, color: "#8B7BAB", fontWeight: 600 }}>Sous-total {support}</td>
                         {annees.map(a => (
                           <td key={a} style={{ padding: "8px 16px", textAlign: "right", color: "#8B7BAB", fontFamily: "'Cormorant Garamond',serif", fontSize: 13, fontWeight: 600 }}>
@@ -1366,7 +1366,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
               </tbody>
               <tfoot>
                 <tr style={{ borderTop: "2px solid #2A2A2A" }}>
-                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total général</td>
+                  <td style={{ padding: "10px 20px", fontSize: 11, color: theme.text3, fontWeight: 600 }}>Total général</td>
                   {annees.map(a => (
                     <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: a === CURRENT_YEAR ? "#5EBF7A" : "#C9A96E", fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontWeight: 600 }}>{fmt(totalParAnnee[a])}</td>
                   ))}
@@ -1381,7 +1381,7 @@ function DividendesSection({ db, clientId, isReadOnly }) {
       {/* Modal ajout */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 400, maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-box" style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 28, width: 400, maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouveau dividende</div>
             {[
               ["entreprise", "Entreprise *", "text", "Apple, LVMH..."],
@@ -1390,14 +1390,14 @@ function DividendesSection({ db, clientId, isReadOnly }) {
               ["montant", "Montant perçu (€) *", "number", "150.00"],
             ].map(([k, l, t, ph]) => (
               <div key={k} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>{l}</div>
+                <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>{l}</div>
                 <input type={t} placeholder={ph} value={form[k] || ""} onChange={e => setForm(p => ({ ...p, [k]: e.target.value }))}
-                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                  style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
               </div>
             ))}
             <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
               <button onClick={saveDividende} disabled={saving} style={{ flex: 1, padding: 10, background: "#5EBF7A", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
-              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
             </div>
           </div>
         </div>
@@ -1471,15 +1471,15 @@ function SimulateurSection({ patrimoineActuel }) {
     } : {})
   }));
 
-  const inpStyle = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 13, fontFamily: "inherit" };
-  const labelStyle = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 };
+  const inpStyle = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "8px 11px", color: theme.text2, fontSize: 13, fontFamily: "inherit" };
+  const labelStyle = { fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 };
 
   return (
     <div>
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Simulateur de projection</div>
 
       {/* Paramètres */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Paramètres</div>
         <div className="grid-3" style={{ marginBottom: 16 }}>
           <div>
@@ -1511,7 +1511,7 @@ function SimulateurSection({ patrimoineActuel }) {
         </div>
 
         {/* Épargne supplémentaire */}
-        <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 16 }}>
+        <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <div onClick={() => setAfficherSupp(!afficherSupp)}
               style={{ width: 32, height: 18, borderRadius: 9, background: afficherSupp ? "#C9A96E" : "#222", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0 }}>
@@ -1541,7 +1541,7 @@ function SimulateurSection({ patrimoineActuel }) {
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, color: k.color }}>
               {k.val}
             </div>
-            <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>dans {params.duree} ans</div>
+            <div style={{ fontSize: 10, color: theme.text4, marginTop: 4 }}>dans {params.duree} ans</div>
           </div>
         ))}
       </div>
@@ -1553,7 +1553,7 @@ function SimulateurSection({ patrimoineActuel }) {
             <div style={{ fontSize: 10, color: "#8B7BAB", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>
               Gain avec +{fmt(params.epargne_supplementaire)}/mois supplémentaires (scénario réaliste)
             </div>
-            <div style={{ fontSize: 11, color: "#555" }}>
+            <div style={{ fontSize: 11, color: theme.text4 }}>
               {fmt(params.epargne + params.epargne_supplementaire)}/mois → {fmtK(finalSuppRealiste)} dans {params.duree} ans
             </div>
           </div>
@@ -1562,8 +1562,8 @@ function SimulateurSection({ patrimoineActuel }) {
       )}
 
       {/* Graphique */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>Courbes de projection</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 20 }}>Courbes de projection</div>
         <ResponsiveContainer width="100%" height={320}>
           <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
             <XAxis dataKey="annee" tick={{ fill: isDark ? "#444" : "#8A8780", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -1600,12 +1600,12 @@ function SimulateurSection({ patrimoineActuel }) {
       </div>
 
       {/* Tableau récapitulatif */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #1A1A1E", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Tableau de projection détaillé</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "14px 20px", borderBottom: `1px solid ${theme.border}`, fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Tableau de projection détaillé</div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
+              <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
                 {["Année", `Pessimiste (${params.taux_pessimiste}%)`, `Réaliste (${params.taux_realiste}%)`, `Optimiste (${params.taux_optimiste}%)`, ...(afficherSupp ? [`Réaliste +${fmt(params.epargne_supplementaire)}/mois`] : [])].map((h, i) => (
                   <th key={i} style={{ padding: "10px 16px", textAlign: i === 0 ? "left" : "right", fontSize: 9, color: ["#888","#E07A7A","#C9A96E","#5EBF7A","#8B7BAB"][i], textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
@@ -1613,8 +1613,8 @@ function SimulateurSection({ patrimoineActuel }) {
             </thead>
             <tbody>
               {projRealiste.filter((_, i) => i % 5 === 0 || i === projRealiste.length - 1).map((r, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #1A1A1E", background: i % 2 === 0 ? "transparent" : "#0A0A0C" }}>
-                  <td style={{ padding: "9px 16px", color: "#888", fontWeight: 500 }}>{r.annee === 0 ? "Aujourd'hui" : `${r.annee} ans`}</td>
+                <tr key={i} style={{ borderBottom: `1px solid ${theme.border}`, background: i % 2 === 0 ? "transparent" : theme.bg }}>
+                  <td style={{ padding: "9px 16px", color: theme.text3, fontWeight: 500 }}>{r.annee === 0 ? "Aujourd'hui" : `${r.annee} ans`}</td>
                   <td style={{ padding: "9px 16px", textAlign: "right", color: "#E07A7A" }}>{fmtK(projPessimiste[projPessimiste.findIndex(x => x.annee === r.annee)]?.valeur)}</td>
                   <td style={{ padding: "9px 16px", textAlign: "right", color: "#C9A96E", fontWeight: 500 }}>{fmtK(r.valeur)}</td>
                   <td style={{ padding: "9px 16px", textAlign: "right", color: "#5EBF7A" }}>{fmtK(projOptimiste[projOptimiste.findIndex(x => x.annee === r.annee)]?.valeur)}</td>
@@ -1671,11 +1671,11 @@ function ImmoLocatifSection() {
   const rendement_net = ((loyers_annuels - charges_annuelles) / cout_total) * 100;
   const rendement_net_net = ((loyers_annuels - charges_annuelles - impots_fonciers) / cout_total) * 100;
 
-  const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" };
-  const labS = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
+  const inpS = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "8px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" };
+  const labS = { fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
   const Field = ({ label, val, color = "#E2DDD6", big = false }) => (
-    <div style={{ padding: "10px 0", borderBottom: "1px solid #1A1A1E", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <span style={{ fontSize: 12, color: "#777" }}>{label}</span>
+    <div style={{ padding: "10px 0", borderBottom: `1px solid ${theme.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span style={{ fontSize: 12, color: theme.text3 }}>{label}</span>
       <span style={{ fontFamily: big ? "'Cormorant Garamond',serif" : "inherit", fontSize: big ? 20 : 13, color, fontWeight: big ? 400 : 500 }}>{val}</span>
     </div>
   );
@@ -1686,7 +1686,7 @@ function ImmoLocatifSection() {
 
       <div className="grid-2" style={{ marginBottom: 16 }}>
         {/* Paramètres acquisition */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Acquisition & financement</div>
           {[
             ["prix_achat","Prix d'achat (€)","number"],
@@ -1704,7 +1704,7 @@ function ImmoLocatifSection() {
         </div>
 
         {/* Paramètres exploitation */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Exploitation & fiscalité</div>
           {[
             ["loyer_mensuel","Loyer mensuel (€)","number"],
@@ -1746,13 +1746,13 @@ function ImmoLocatifSection() {
 
       {/* Détail calculs */}
       <div className="grid-2">
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>Financement</div>
           <Field label="Coût total projet" val={fmt(cout_total)} />
           <Field label="Capital emprunté" val={fmt(capital_emprunte)} />
           <Field label="Mensualité crédit" val={fmt(mensualite_credit)} color="#E07A7A" big />
         </div>
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>Cashflow annuel</div>
           <Field label="Loyers perçus" val={fmt(loyers_annuels)} color="#5EBF7A" />
           <Field label="Charges & taxes" val={fmt(charges_annuelles)} color="#E07A7A" />
@@ -1828,8 +1828,8 @@ function LouerAcheterSection() {
   const finalLocation = simData[simData.length - 1]?.location || 0;
   const achatGagnant = finalAchat >= finalLocation;
 
-  const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" };
-  const labS = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
+  const inpS = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "8px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" };
+  const labS = { fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
 
   return (
     <div>
@@ -1852,7 +1852,7 @@ function LouerAcheterSection() {
 
       <div className="grid-2" style={{ marginBottom: 16 }}>
         {/* Params achat */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>0 Scénario achat</div>
           {[
             ["prix_bien","Prix du bien (€)"],["apport","Apport (€)"],["taux_credit","Taux crédit (%/an)"],
@@ -1867,7 +1867,7 @@ function LouerAcheterSection() {
           ))}
         </div>
         {/* Params location */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#5BA3E0", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>1 Scénario location</div>
           {[
             ["loyer_equiv","Loyer équivalent/mois (€)"],["depot_garantie","Dépôt de garantie (€)"],
@@ -1894,14 +1894,14 @@ function LouerAcheterSection() {
       </div>
 
       {/* Tableau comparatif */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #1A1A1E", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Évolution du patrimoine net</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ padding: "14px 20px", borderBottom: `1px solid ${theme.border}`, fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Évolution du patrimoine net</div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
+              <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
                 {["Période","Patrimoine achat","Patrimoine location","Avantage"].map((h,i) => (
-                  <th key={i} style={{ padding: "10px 16px", textAlign: i===0?"left":"right", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>{h}</th>
+                  <th key={i} style={{ padding: "10px 16px", textAlign: i===0?"left":"right", fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1909,8 +1909,8 @@ function LouerAcheterSection() {
               {simData.map((r, i) => {
                 const avantage = r.achat - r.location;
                 return (
-                  <tr key={i} style={{ borderBottom: "1px solid #1A1A1E", background: i%2===0?"transparent":"#0A0A0C" }}>
-                    <td style={{ padding: "9px 16px", color: "#888" }}>{r.annee}</td>
+                  <tr key={i} style={{ borderBottom: `1px solid ${theme.border}`, background: i%2===0?"transparent":theme.bg }}>
+                    <td style={{ padding: "9px 16px", color: theme.text3 }}>{r.annee}</td>
                     <td style={{ padding: "9px 16px", textAlign: "right", color: "#C9A96E" }}>{fmt(r.achat)}</td>
                     <td style={{ padding: "9px 16px", textAlign: "right", color: "#5BA3E0" }}>{fmt(r.location)}</td>
                     <td style={{ padding: "9px 16px", textAlign: "right", color: avantage >= 0 ? "#5EBF7A" : "#E07A7A", fontWeight: 600 }}>{avantage >= 0 ? "+" : ""}{fmt(avantage)}</td>
@@ -2005,11 +2005,11 @@ function ImpotsSection({ clientId }) {
   const tmi_tranche = BAREME.reduce((acc, t) => qi_final > t.min ? t : acc, BAREME[0]);
   const tmi = tmi_tranche.taux * 100;
 
-  const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "8px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" };
-  const labS = { fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
+  const inpS = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "8px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" };
+  const labS = { fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 };
   const Row = ({ label, val, color = "#777", bold = false }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #1A1A1E" }}>
-      <span style={{ fontSize: 12, color: "#777" }}>{label}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${theme.border}` }}>
+      <span style={{ fontSize: 12, color: theme.text3 }}>{label}</span>
       <span style={{ fontSize: 13, color, fontWeight: bold ? 600 : 400 }}>{val}</span>
     </div>
   );
@@ -2024,7 +2024,7 @@ function ImpotsSection({ clientId }) {
   return (
     <div>
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 6 }}>Estimation impôt sur le revenu</div>
-      <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>⚠️ Estimation indicative -- barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
+      <div style={{ fontSize: 11, color: theme.text4, marginBottom: 20 }}>⚠️ Estimation indicative -- barème 2025. Consultez un expert-comptable pour votre situation exacte.</div>
 
       {/* KPIs */}
       <div className="grid-3" style={{ marginBottom: 20 }}>
@@ -2042,7 +2042,7 @@ function ImpotsSection({ clientId }) {
 
       <div className="grid-2" style={{ marginBottom: 16 }}>
         {/* Revenus */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Revenus & situation</div>
           <div style={{ marginBottom: 10 }}>
             <div style={labS}>Salaire net annuel (€)</div>
@@ -2084,9 +2084,9 @@ function ImpotsSection({ clientId }) {
         </div>
 
         {/* Déductions & réductions */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ fontSize: 10, color: "#5EBF7A", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Déductions & réductions d'impôt</div>
-          <div style={{ fontSize: 9, color: "#555", marginBottom: 10 }}>DÉDUCTIONS (réduisent le revenu imposable)</div>
+          <div style={{ fontSize: 9, color: theme.text4, marginBottom: 10 }}>DÉDUCTIONS (réduisent le revenu imposable)</div>
           <div style={{ marginBottom: 10 }}>
             <div style={labS}>Versements PER (€)</div>
             <input type="number" value={p.per_versements} onChange={e => up("per_versements", e.target.value)} style={{ ...inpS, borderColor: "#5EBF7A30" }} />
@@ -2095,7 +2095,7 @@ function ImpotsSection({ clientId }) {
             <div style={labS}>Épargne retraite (PERCO, article 83...) (€)</div>
             <input type="number" value={p.compte_epargne_retraite} onChange={e => up("compte_epargne_retraite", e.target.value)} style={{ ...inpS, borderColor: "#5EBF7A30" }} />
           </div>
-          <div style={{ fontSize: 9, color: "#555", marginBottom: 10 }}>RÉDUCTIONS (réduisent directement l'impôt)</div>
+          <div style={{ fontSize: 9, color: theme.text4, marginBottom: 10 }}>RÉDUCTIONS (réduisent directement l'impôt)</div>
           <div style={{ marginBottom: 10 }}>
             <div style={labS}>Dons aux associations (€) → réduction 66%</div>
             <input type="number" value={p.dons} onChange={e => up("dons", e.target.value)} style={{ ...inpS, borderColor: "#C9A96E30" }} />
@@ -2110,7 +2110,7 @@ function ImpotsSection({ clientId }) {
           </div>
 
           {/* Récap calcul */}
-          <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 14 }}>
+          <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 14 }}>
             <Row label="Revenu net imposable (base)" val={fmt(revenu_brut_global)} />
             <Row label="Déductions (PER, retraite...)" val={`- ${fmt(deductions)}`} color="#5EBF7A" />
             <Row label="Revenu net imposable" val={fmt(revenu_net_imposable)} color="#E2DDD6" bold />
@@ -2122,19 +2122,19 @@ function ImpotsSection({ clientId }) {
       </div>
 
       {/* Barème visuel */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2025 -- votre position</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
+        <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Barème progressif 2025 -- votre position</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {BAREME.map((t, i) => (
             <div key={i} style={{
               flex: 1, minWidth: 80, padding: "12px 10px", borderRadius: 8, textAlign: "center",
-              background: qi_final > t.min ? (t.taux === tmi/100 ? "#2F1018" : "#1A1A2F") : "#141416",
-              border: `1px solid ${qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A40" : "#8B7BAB30") : "#1A1A1E"}`,
+              background: qi_final > t.min ? (t.taux === tmi/100 ? theme.redBg : theme.purpleBg) : theme.inputBg,
+              border: `1px solid ${qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A40" : "#8B7BAB30") : theme.border}`,
             }}>
               <div style={{ fontSize: 18, fontFamily: "'Cormorant Garamond',serif", color: qi_final > t.min ? (t.taux === tmi/100 ? "#E07A7A" : "#8B7BAB") : "#333" }}>
                 {(t.taux * 100)}%
               </div>
-              <div style={{ fontSize: 9, color: "#444", marginTop: 4 }}>
+              <div style={{ fontSize: 9, color: theme.text5, marginTop: 4 }}>
                 {t.min === 0 ? `0 - ${(t.max/1000).toFixed(0)}k` : t.max === Infinity ? `>${(t.min/1000).toFixed(0)}k` : `${(t.min/1000).toFixed(0)}k-${(t.max/1000).toFixed(0)}k`}
               </div>
               {t.taux === tmi/100 && qi_final > t.min && (
@@ -2443,10 +2443,10 @@ function RevenusSection({ db, clientId, color, fmt }) {
       <div className="grid-3" style={{ marginBottom: 20 }}>
         {[
           { label: `Revenus ${CURRENT_YEAR}`, val: fmt(totalParAnnee[CURRENT_YEAR] || 0), color: color || "#C9A96E", bg: "#1A1712" },
-          { label: `Revenus ${CURRENT_YEAR - 1}`, val: fmt(totalParAnnee[CURRENT_YEAR - 1] || 0), color: "#E2DDD6", bg: "#0F0F11" },
-          { label: "Total saisi", val: fmt(totalGlobal), color: "#E2DDD6", bg: "#0F0F11" },
+          { label: `Revenus ${CURRENT_YEAR - 1}`, val: fmt(totalParAnnee[CURRENT_YEAR - 1] || 0), color: theme.text, bg: theme.bg2 },
+          { label: "Total saisi", val: fmt(totalGlobal), color: theme.text, bg: theme.bg2 },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color + "30"}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === theme.text || k.color === "#E2DDD6" ? theme.border : k.color + "30"}`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
           </div>
@@ -2456,11 +2456,11 @@ function RevenusSection({ db, clientId, color, fmt }) {
       {/* Graphique + tableau côte à côte */}
       <div className="grid-budget" style={{ marginBottom: 20 }}>
         {/* Graphique */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Évolution annuelle</div>
+            <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Évolution annuelle</div>
             <select value={selectedCat} onChange={e => setSelectedCat(e.target.value)}
-              style={{ padding: "4px 10px", background: "#141416", border: "1px solid #222", borderRadius: 6, color: "#CCC", fontSize: 11, fontFamily: "inherit" }}>
+              style={{ padding: "4px 10px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 6, color: theme.text2, fontSize: 11, fontFamily: "inherit" }}>
               <option value="Tous">Tous les revenus</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -2495,7 +2495,7 @@ function RevenusSection({ db, clientId, color, fmt }) {
                   const pct = prev > 0 ? ((diff / prev) * 100).toFixed(1) : null;
                   return (
                     <div key={a} style={{ padding: "6px 10px", background: diff >= 0 ? "#1A2F1F" : "#2F1010", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, color: "#777" }}>{a} vs {annees[idx + 1]}</span>
+                      <span style={{ fontSize: 10, color: theme.text3 }}>{a} vs {annees[idx + 1]}</span>
                       <span style={{ fontSize: 11, color: diff >= 0 ? "#5EBF7A" : "#E07A7A", fontWeight: 600 }}>
                         {diff >= 0 ? "+" : ""}{fmt(diff)}{pct ? ` (${pct}%)` : ""}
                       </span>
@@ -2504,13 +2504,13 @@ function RevenusSection({ db, clientId, color, fmt }) {
                 })}
               </div>
             </>
-          ) : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
+          ) : <div style={{ color: theme.text5, fontSize: 12, textAlign: "center", paddingTop: 40 }}>Aucune donnée</div>}
         </div>
 
         {/* Répartition par catégorie */}
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Répartition {annees[0] || CURRENT_YEAR}</div>
-          {categories.length === 0 ? <div style={{ color: "#444", fontSize: 12 }}>Aucune donnée</div> : (
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Répartition {annees[0] || CURRENT_YEAR}</div>
+          {categories.length === 0 ? <div style={{ color: theme.text5, fontSize: 12 }}>Aucune donnée</div> : (
             <>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
@@ -2525,9 +2525,9 @@ function RevenusSection({ db, clientId, color, fmt }) {
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 6, height: 6, borderRadius: "50%", background: catColors[i % catColors.length] }} />
-                    <span style={{ fontSize: 11, color: "#777" }}>{c}</span>
+                    <span style={{ fontSize: 11, color: theme.text3 }}>{c}</span>
                   </div>
-                  <span style={{ fontSize: 11, color: "#999" }}>{fmt(matrix[c][annees[0]] || 0)}</span>
+                  <span style={{ fontSize: 11, color: theme.text5 }}>{fmt(matrix[c][annees[0]] || 0)}</span>
                 </div>
               ))}
             </>
@@ -2536,20 +2536,20 @@ function RevenusSection({ db, clientId, color, fmt }) {
       </div>
 
       {/* Tableau récapitulatif */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Détail par catégorie & année</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${theme.border}` }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Détail par catégorie & année</div>
           <button onClick={() => setModal(true)} style={{ padding: "5px 14px", background: color || "#C9A96E", border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>+ Ajouter</button>
         </div>
 
         {revenus.length === 0 ? (
-          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun revenu enregistré.</div>
+          <div style={{ padding: 28, color: theme.text5, fontSize: 13, textAlign: "center" }}>Aucun revenu enregistré.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #1A1A1E" }}>
-                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500 }}>Catégorie</th>
+                <tr style={{ borderBottom: `1px solid ${theme.border}` }}>
+                  <th style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500 }}>Catégorie</th>
                   {annees.map(a => (
                     <th key={a} style={{ padding: "10px 16px", textAlign: "right", fontSize: 9, color: a === CURRENT_YEAR ? (color || "#C9A96E") : "#444", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, whiteSpace: "nowrap" }}>{a}</th>
                   ))}
@@ -2558,11 +2558,11 @@ function RevenusSection({ db, clientId, color, fmt }) {
               </thead>
               <tbody>
                 {categories.map((c, ci) => (
-                  <tr key={c} style={{ borderBottom: "1px solid #1A1A1E", background: ci % 2 === 0 ? "transparent" : "#0A0A0C" }}>
+                  <tr key={c} style={{ borderBottom: `1px solid ${theme.border}`, background: ci % 2 === 0 ? "transparent" : theme.bg }}>
                     <td style={{ padding: "10px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: catColors[ci % catColors.length], flexShrink: 0 }} />
-                        <span style={{ color: "#CCC" }}>{c}</span>
+                        <span style={{ color: theme.text2 }}>{c}</span>
                       </div>
                     </td>
                     {annees.map(a => (
@@ -2576,7 +2576,7 @@ function RevenusSection({ db, clientId, color, fmt }) {
               </tbody>
               <tfoot>
                 <tr style={{ borderTop: "2px solid #2A2A2A" }}>
-                  <td style={{ padding: "10px 20px", fontSize: 11, color: "#888", fontWeight: 600 }}>Total</td>
+                  <td style={{ padding: "10px 20px", fontSize: 11, color: theme.text3, fontWeight: 600 }}>Total</td>
                   {annees.map(a => (
                     <td key={a} style={{ padding: "10px 16px", textAlign: "right", color: a === CURRENT_YEAR ? (color || "#C9A96E") : "#C9A96E", fontFamily: "'Cormorant Garamond',serif", fontSize: 14, fontWeight: 600 }}>{fmt(totalParAnnee[a])}</td>
                   ))}
@@ -2593,40 +2593,40 @@ function RevenusSection({ db, clientId, color, fmt }) {
       {/* Modal ajout */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 400 }}>
+          <div className="modal-box" style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 28, width: 400 }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Nouveau revenu</div>
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Catégorie *</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Catégorie *</div>
               <select value={form.categorie === form.categorie_custom ? "Autres revenus" : form.categorie} onChange={e => {
                 if (e.target.value === "Autres revenus") setForm(p => ({ ...p, categorie: "", categorie_custom: true }));
                 else setForm(p => ({ ...p, categorie: e.target.value, categorie_custom: false }));
               }}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: form.categorie ? "#CCC" : "#555", fontSize: 12, fontFamily: "inherit" }}>
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: form.categorie ? "#CCC" : "#555", fontSize: 12, fontFamily: "inherit" }}>
                 <option value="">Sélectionner...</option>
                 {CATEGORIES_REV.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             {(form.categorie_custom || form.categorie === "") && form.categorie !== undefined && (
               <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Préciser le type de revenu *</div>
+                <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Préciser le type de revenu *</div>
                 <input placeholder="Ex: Droits d'auteur, Prime, Indemnité..." value={typeof form.categorie === 'string' && !CATEGORIES_REV.includes(form.categorie) ? form.categorie : ""}
                   onChange={e => setForm(p => ({ ...p, categorie: e.target.value }))}
-                  style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                  style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
               </div>
             )}
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Année *</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Année *</div>
               <input type="number" value={form.annee} onChange={e => setForm(p => ({ ...p, annee: e.target.value }))}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 10, color: "#555", marginBottom: 5 }}>Montant annuel (€) *</div>
+              <div style={{ fontSize: 10, color: theme.text4, marginBottom: 5 }}>Montant annuel (€) *</div>
               <input type="number" placeholder="Ex: 45000" value={form.montant} onChange={e => setForm(p => ({ ...p, montant: e.target.value }))}
-                style={{ width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit" }} />
+                style={{ width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit" }} />
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={save} disabled={saving} style={{ flex: 1, padding: 10, background: color || "#C9A96E", border: "none", borderRadius: 8, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
-              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+              <button onClick={() => setModal(false)} style={{ padding: "10px 16px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
             </div>
           </div>
         </div>
@@ -2646,7 +2646,7 @@ function ImmobilierSection({ db, clientId, isReadOnly }) {
   return (
     <div>
       {/* Sub-tabs */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: `1px solid ${theme.border}` }}>
         {[["biens","Mes biens"], ["locatif","Rentabilité locative"], ["louer_acheter","Louer vs Acheter"]].map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
@@ -2720,19 +2720,19 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
   const plusValues = biens.reduce((s, b) => s + ((b.valorisation_actuelle || 0) - (b.prix_achat || 0)), 0);
 
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
-  const inpS = { width: "100%", background: "#141416", border: "1px solid #222", borderRadius: 7, padding: "9px 11px", color: "#CCC", fontSize: 12, fontFamily: "inherit", marginBottom: 12 };
-  const labS = { fontSize: 10, color: "#555", marginBottom: 4 };
+  const inpS = { width: "100%", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 7, padding: "9px 11px", color: theme.text2, fontSize: 12, fontFamily: "inherit", marginBottom: 12 };
+  const labS = { fontSize: 10, color: theme.text4, marginBottom: 4 };
 
   return (
     <div>
       {/* KPIs */}
       <div className="grid-3" style={{ marginBottom: 20 }}>
         {[
-          { label: "Valeur totale des biens", val: fmt(totalPatrimoine), color: "#E2DDD6", bg: "#0F0F11" },
+          { label: "Valeur totale des biens", val: fmt(totalPatrimoine), color: theme.text, bg: theme.bg2 },
           { label: "Dettes immobilières", val: fmt(totalDette), color: "#E07A7A", bg: "#2F1010" },
           { label: "Patrimoine immobilier net", val: fmt(patrimoineNet), color: "#5EBF7A", bg: "#1A2F1F" },
         ].map((k, i) => (
-          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === "#E2DDD6" ? "#1A1A1E" : k.color+"25"}`, borderRadius: 10, padding: "14px 16px" }}>
+          <div key={i} style={{ background: k.bg, border: `1px solid ${k.color === theme.text ? theme.border : k.color+"25"}`, borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ fontSize: 9, color: k.color === "#E2DDD6" ? "#444" : k.color, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 5 }}>{k.label}</div>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 24, color: k.color }}>{k.val}</div>
           </div>
@@ -2740,9 +2740,9 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
       </div>
 
       {/* Liste biens */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #1A1A1E" }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Biens immobiliers ({biens.length})</div>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${theme.border}` }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Biens immobiliers ({biens.length})</div>
           {!isReadOnly && (
             <button onClick={() => { setForm({ type_bien: "Résidence principale" }); setModal("new"); }}
               style={{ padding: "5px 14px", background: "#8B7BAB", border: "none", borderRadius: 6, cursor: "pointer", color: "#fff", fontSize: 10, fontWeight: 600, fontFamily: "inherit" }}>
@@ -2752,7 +2752,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
         </div>
 
         {biens.length === 0 && (
-          <div style={{ padding: 28, color: "#444", fontSize: 13, textAlign: "center" }}>Aucun bien immobilier enregistré.</div>
+          <div style={{ padding: 28, color: theme.text5, fontSize: 13, textAlign: "center" }}>Aucun bien immobilier enregistré.</div>
         )}
 
         {biens.map((b, i) => {
@@ -2761,38 +2761,38 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
           const pvPct = b.prix_achat > 0 ? (pv / b.prix_achat * 100) : 0;
           const patrimoineNetBien = valeur - (b.capital_restant_du || 0);
           return (
-            <div key={b.id} style={{ borderBottom: "1px solid #1A1A1E", padding: "18px 20px" }}>
+            <div key={b.id} style={{ borderBottom: `1px solid ${theme.border}`, padding: "18px 20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: "#E2DDD6", marginBottom: 3 }}>{b.nom}</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, marginBottom: 3 }}>{b.nom}</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={{ padding: "2px 8px", background: "#8B7BAB20", border: "1px solid #8B7BAB30", borderRadius: 20, fontSize: 10, color: "#8B7BAB" }}>{b.type_bien}</span>
-                    {b.adresse && <span style={{ fontSize: 10, color: "#555" }}>📍 {b.adresse}</span>}
-                    {b.date_achat && <span style={{ fontSize: 10, color: "#555" }}>🗓 Achat : {fmtDate(b.date_achat)}</span>}
+                    {b.adresse && <span style={{ fontSize: 10, color: theme.text4 }}>📍 {b.adresse}</span>}
+                    {b.date_achat && <span style={{ fontSize: 10, color: theme.text4 }}>🗓 Achat : {fmtDate(b.date_achat)}</span>}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {!isReadOnly && <>
                     <button onClick={() => { setForm({ ...b }); setModal("edit"); }}
-                      style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#888", fontSize: 10, fontFamily: "inherit" }}>Modifier</button>
+                      style={{ padding: "5px 12px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 6, cursor: "pointer", color: theme.text3, fontSize: 10, fontFamily: "inherit" }}>Modifier</button>
                     <button onClick={() => delBien(b.id)}
-                      style={{ padding: "5px 12px", background: "#141416", border: "1px solid #222", borderRadius: 6, cursor: "pointer", color: "#E07A7A", fontSize: 10, fontFamily: "inherit" }}>✕</button>
+                      style={{ padding: "5px 12px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 6, cursor: "pointer", color: "#E07A7A", fontSize: 10, fontFamily: "inherit" }}>✕</button>
                   </>}
                 </div>
               </div>
 
               <div className="grid-3">
-                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Prix d'achat</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#E2DDD6" }}>{fmt(b.prix_achat)}</div>
+                <div style={{ background: theme.inputBg, borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Prix d'achat</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: theme.text }}>{fmt(b.prix_achat)}</div>
                 </div>
-                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Valorisation actuelle</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#E2DDD6" }}>{fmt(valeur)}</div>
+                <div style={{ background: theme.inputBg, borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Valorisation actuelle</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: theme.text }}>{fmt(valeur)}</div>
                   <div style={{ fontSize: 10, color: pv >= 0 ? "#5EBF7A" : "#E07A7A", marginTop: 2 }}>{pv >= 0 ? "+" : ""}{fmt(pv)} ({pvPct.toFixed(1)}%)</div>
                 </div>
-                <div style={{ background: "#141416", borderRadius: 8, padding: "10px 14px" }}>
-                  <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Patrimoine net</div>
+                <div style={{ background: theme.inputBg, borderRadius: 8, padding: "10px 14px" }}>
+                  <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Patrimoine net</div>
                   <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 18, color: "#5EBF7A" }}>{fmt(patrimoineNetBien)}</div>
                   {b.capital_restant_du > 0 && <div style={{ fontSize: 10, color: "#E07A7A", marginTop: 2 }}>Dette : {fmt(b.capital_restant_du)}</div>}
                 </div>
@@ -2802,10 +2802,10 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
                 <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
                   {b.mensualite_credit > 0 && <span style={{ fontSize: 11, color: "#E07A7A", background: "#E07A7A10", padding: "4px 10px", borderRadius: 20 }}>💳 {fmt(b.mensualite_credit)}/mois · {b.taux_credit}%</span>}
                   {b.loyer_mensuel > 0 && <span style={{ fontSize: 11, color: "#5EBF7A", background: "#5EBF7A10", padding: "4px 10px", borderRadius: 20 }}>0 Loyer {fmt(b.loyer_mensuel)}/mois</span>}
-                  {b.date_fin_credit && <span style={{ fontSize: 11, color: "#555", padding: "4px 10px" }}>Fin crédit : {fmtDate(b.date_fin_credit)}</span>}
+                  {b.date_fin_credit && <span style={{ fontSize: 11, color: theme.text4, padding: "4px 10px" }}>Fin crédit : {fmtDate(b.date_fin_credit)}</span>}
                 </div>
               )}
-              {b.notes && <div style={{ fontSize: 11, color: "#555", marginTop: 8, fontStyle: "italic" }}>{b.notes}</div>}
+              {b.notes && <div style={{ fontSize: 11, color: theme.text4, marginTop: 8, fontStyle: "italic" }}>{b.notes}</div>}
             </div>
           );
         })}
@@ -2814,7 +2814,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
       {/* Modal */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div className="modal-box" style={{ background: "#0F0F11", border: "1px solid #222", borderRadius: 14, padding: 28, width: 500, maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-box" style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 28, width: 500, maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>{modal === "edit" ? "Modifier le bien" : "Nouveau bien immobilier"}</div>
 
             <div style={labS}>Nom du bien *</div>
@@ -2880,7 +2880,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
 
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button onClick={saveBien} disabled={saving} style={{ flex: 1, padding: 10, background: "#8B7BAB", border: "none", borderRadius: 8, cursor: "pointer", color: "#fff", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>{saving ? "..." : "Enregistrer"}</button>
-              <button onClick={() => setModal(null)} style={{ padding: "10px 16px", background: "#141416", border: "1px solid #222", borderRadius: 8, cursor: "pointer", color: "#777", fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
+              <button onClick={() => setModal(null)} style={{ padding: "10px 16px", background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit" }}>Annuler</button>
             </div>
           </div>
         </div>
@@ -2933,13 +2933,13 @@ function NotesSection({ db, clientId, auteur, color }) {
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 20 }}>Notes & suivi</div>
 
       {/* Saisie */}
-      <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>
           {auteur === "admin" ? "Note du conseiller" : "Ma note"}
         </div>
         <textarea value={newNote} onChange={e => setNewNote(e.target.value)}
           placeholder={auteur === "admin" ? "Résumé du rendez-vous, décision prise, ajustement stratégique..." : "Ma question, mon commentaire, mon observation..."}
-          style={{ width: "100%", minHeight: 90, background: "#141416", border: "1px solid #222", borderRadius: 8, padding: "10px 12px", color: "#CCC", fontSize: 13, lineHeight: 1.6, resize: "none", fontFamily: "inherit" }} />
+          style={{ width: "100%", minHeight: 90, background: theme.inputBg, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "10px 12px", color: theme.text2, fontSize: 13, lineHeight: 1.6, resize: "none", fontFamily: "inherit" }} />
         <button onClick={addNote} disabled={saving}
           style={{ marginTop: 10, padding: "9px 20px", background: color || "#C9A96E", border: "none", borderRadius: 7, cursor: "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
           {saving ? "..." : "Enregistrer"}
@@ -2947,26 +2947,26 @@ function NotesSection({ db, clientId, auteur, color }) {
       </div>
 
       {/* Liste des notes */}
-      {loading && <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>Chargement...</div>}
+      {loading && <div style={{ color: theme.text5, fontSize: 13, textAlign: "center", padding: "20px 0" }}>Chargement...</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {!loading && notes.length === 0 && (
-          <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>Aucune note pour l'instant</div>
+          <div style={{ color: theme.text5, fontSize: 13, textAlign: "center", padding: "20px 0" }}>Aucune note pour l'instant</div>
         )}
         {notes.map((n) => {
           const isAdmin = n.auteur === "admin";
           const noteColor = isAdmin ? (color || "#C9A96E") : "#6AAED4";
           return (
-            <div key={n.id} style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderLeft: `3px solid ${noteColor}50`, borderRadius: "0 10px 10px 0", padding: "14px 18px" }}>
+            <div key={n.id} style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderLeft: `3px solid ${noteColor}50`, borderRadius: "0 10px 10px 0", padding: "14px 18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 10, color: noteColor }}>{isAdmin ? "👤 Conseiller" : "🙋 Client"}</div>
-                  <div style={{ fontSize: 10, color: "#444" }}>{fmtDate(n.created_at)}</div>
+                  <div style={{ fontSize: 10, color: theme.text5 }}>{fmtDate(n.created_at)}</div>
                 </div>
                 {auteur === "admin" && (
-                  <button onClick={() => delNote(n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 11, fontFamily: "inherit" }}>✕</button>
+                  <button onClick={() => delNote(n.id)} style={{ background: "none", border: "none", cursor: "pointer", color: theme.text4, fontSize: 11, fontFamily: "inherit" }}>✕</button>
                 )}
               </div>
-              <div style={{ fontSize: 13, color: "#AAA", lineHeight: 1.6 }}>{n.texte}</div>
+              <div style={{ fontSize: 13, color: theme.text4, lineHeight: 1.6 }}>{n.texte}</div>
             </div>
           );
         })}
@@ -3311,12 +3311,12 @@ function InformationsSection() {
   return (
     <div>
       <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, marginBottom: 6 }}>Centre d'informations financières</div>
-      <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>
+      <div style={{ fontSize: 11, color: theme.text4, marginBottom: 20 }}>
         Sources : Banque de France, AMF, impots.gouv.fr, BPCE, Crédit Agricole, JustETF, MoneyVox, Meilleure Banque
       </div>
 
       {/* Category tabs */}
-      <div className="tabs-row" style={{ borderBottom: "1px solid #1A1A1E", marginBottom: 24 }}>
+      <div className="tabs-row" style={{ borderBottom: `1px solid ${theme.border}`, marginBottom: 24 }}>
         {catKeys.map(k => {
           const c = INFO_DATA[k];
           return (
@@ -3333,30 +3333,30 @@ function InformationsSection() {
         {cat.items.map((item, i) => {
           const isOpen = openItem === i;
           return (
-            <div key={i} style={{ background: "#0F0F11", border: `1px solid ${isOpen ? cat.color + "40" : "#1A1A1E"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s" }}>
+            <div key={i} style={{ background: theme.bg2, border: `1px solid ${isOpen ? cat.color + "40" : theme.border}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s" }}>
               {/* Header */}
               <div onClick={() => setOpenItem(isOpen ? null : i)}
                 style={{ padding: "16px 20px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: cat.color, flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: "#E2DDD6", marginBottom: 3 }}>{item.nom}</div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: theme.text, marginBottom: 3 }}>{item.nom}</div>
                     <span style={{ padding: "2px 8px", background: `${cat.color}15`, border: `1px solid ${cat.color}30`, borderRadius: 20, fontSize: 10, color: cat.color }}>{item.badge}</span>
                   </div>
                 </div>
-                <div style={{ fontSize: 16, color: "#555", transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</div>
+                <div style={{ fontSize: 16, color: theme.text4, transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▾</div>
               </div>
 
               {/* Details */}
               {isOpen && (
                 <div style={{ padding: "0 20px 20px" }}>
-                  <div style={{ borderTop: "1px solid #1A1A1E", paddingTop: 16, marginBottom: 14 }}>
+                  <div style={{ borderTop: `1px solid ${theme.border}`, paddingTop: 16, marginBottom: 14 }}>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                       <tbody>
                         {item.details.map((d, di) => (
-                          <tr key={di} style={{ borderBottom: "1px solid #1A1A1E" }}>
+                          <tr key={di} style={{ borderBottom: `1px solid ${theme.border}` }}>
                             <td style={{ padding: "8px 16px 8px 0", fontSize: 11, color: "#666", width: "35%", verticalAlign: "top" }}>{d.label}</td>
-                            <td style={{ padding: "8px 0", fontSize: 12, color: "#E2DDD6", fontWeight: 500 }}>{d.val}</td>
+                            <td style={{ padding: "8px 0", fontSize: 12, color: theme.text, fontWeight: 500 }}>{d.val}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -3365,7 +3365,7 @@ function InformationsSection() {
                   {item.note && (
                     <div style={{ background: `${cat.color}10`, border: `1px solid ${cat.color}25`, borderRadius: 8, padding: "10px 14px", display: "flex", gap: 10 }}>
                       <span style={{ fontSize: 14, flexShrink: 0 }}>💡</span>
-                      <span style={{ fontSize: 12, color: "#AAA", lineHeight: 1.6 }}>{item.note}</span>
+                      <span style={{ fontSize: 12, color: theme.text4, lineHeight: 1.6 }}>{item.note}</span>
                     </div>
                   )}
                 </div>
@@ -3377,9 +3377,9 @@ function InformationsSection() {
 
       {/* Graphique Rendement / Risque */}
       {activeCategory === "principes" && (
-        <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 24, marginBottom: 10 }}>
-          <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Carte Rendement / Risque / Liquidité</div>
-          <div style={{ fontSize: 11, color: "#555", marginBottom: 20 }}>Positionnement indicatif des principales classes d'actifs</div>
+        <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 24, marginBottom: 10 }}>
+          <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>Carte Rendement / Risque / Liquidité</div>
+          <div style={{ fontSize: 11, color: theme.text4, marginBottom: 20 }}>Positionnement indicatif des principales classes d'actifs</div>
 
           {/* Legend liquidité */}
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
@@ -3397,23 +3397,23 @@ function InformationsSection() {
           </div>
 
           {/* Chart area */}
-          <div style={{ position: "relative", height: 380, background: "#0A0A0C", borderRadius: 10, border: "1px solid #1A1A1E", overflow: "hidden" }}>
+          <div style={{ position: "relative", height: 380, background: theme.bg, borderRadius: 10, border: `1px solid ${theme.border}`, overflow: "hidden" }}>
 
             {/* Grid lines */}
             {[0,25,50,75,100].map(v => (
-              <div key={v} style={{ position: "absolute", left: "8%", right: "4%", top: `${4 + (100-v) * 0.88}%`, height: 1, background: "#1A1A1E" }}>
-                <span style={{ position: "absolute", left: -28, top: -8, fontSize: 9, color: "#333" }}>{v}%</span>
+              <div key={v} style={{ position: "absolute", left: "8%", right: "4%", top: `${4 + (100-v) * 0.88}%`, height: 1, background: theme.bg4 }}>
+                <span style={{ position: "absolute", left: -28, top: -8, fontSize: 9, color: theme.text6 }}>{v}%</span>
               </div>
             ))}
             {[0,25,50,75,100].map(v => (
-              <div key={v} style={{ position: "absolute", top: "4%", bottom: "12%", left: `${8 + v * 0.88}%`, width: 1, background: "#1A1A1E" }}>
-                <span style={{ position: "absolute", bottom: -18, left: -8, fontSize: 9, color: "#333" }}>{v}%</span>
+              <div key={v} style={{ position: "absolute", top: "4%", bottom: "12%", left: `${8 + v * 0.88}%`, width: 1, background: theme.bg4 }}>
+                <span style={{ position: "absolute", bottom: -18, left: -8, fontSize: 9, color: theme.text6 }}>{v}%</span>
               </div>
             ))}
 
             {/* Axis labels */}
-            <div style={{ position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: "#555", letterSpacing: "0.1em", textTransform: "uppercase" }}>Risque →</div>
-            <div style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%) rotate(-90deg)", fontSize: 10, color: "#555", letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>← Rendement</div>
+            <div style={{ position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)", fontSize: 10, color: theme.text4, letterSpacing: "0.1em", textTransform: "uppercase" }}>Risque →</div>
+            <div style={{ position: "absolute", left: 4, top: "50%", transform: "translateY(-50%) rotate(-90deg)", fontSize: 10, color: theme.text4, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }}>← Rendement</div>
 
             {/* Efficient frontier curve (decorative) */}
             <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
@@ -3452,7 +3452,7 @@ function InformationsSection() {
                     }} />
                     <div style={{
                       position: "absolute", left: pt.size + 3, top: "50%", transform: "translateY(-50%)",
-                      fontSize: 9, color: "#AAA", whiteSpace: "nowrap",
+                      fontSize: 9, color: theme.text4, whiteSpace: "nowrap",
                       background: "rgba(10,10,12,0.75)", padding: "1px 4px", borderRadius: 3,
                     }}>{pt.label}</div>
                   </div>
@@ -3465,16 +3465,16 @@ function InformationsSection() {
             <div style={{ position: "absolute", right: "5%", top: "10%", fontSize: 9, color: "#2F1010", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>Zone spéculative</div>
           </div>
 
-          <div style={{ marginTop: 10, fontSize: 10, color: "#444", fontStyle: "italic" }}>
+          <div style={{ marginTop: 10, fontSize: 10, color: theme.text5, fontStyle: "italic" }}>
             ⚠️ Positionnement indicatif à titre éducatif. Les rendements passés ne présagent pas des rendements futurs.
           </div>
         </div>
       )}
 
       {/* Sources footer */}
-      <div style={{ marginTop: 24, padding: "14px 20px", background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12 }}>
-        <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>Sources & références</div>
-        <div style={{ fontSize: 11, color: "#555", lineHeight: 1.8 }}>
+      <div style={{ marginTop: 24, padding: "14px 20px", background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12 }}>
+        <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 8 }}>Sources & références</div>
+        <div style={{ fontSize: 11, color: theme.text4, lineHeight: 1.8 }}>
           • <span style={{ color: "#666" }}>Banque de France</span> -- banque-france.fr (taux réglementés)<br/>
           • <span style={{ color: "#666" }}>AMF (Autorité des Marchés Financiers)</span> -- amf-france.org (réglementation, éducation financière)<br/>
           • <span style={{ color: "#666" }}>Direction Générale des Finances Publiques</span> -- impots.gouv.fr (fiscalité de l'épargne)<br/>
@@ -3483,7 +3483,7 @@ function InformationsSection() {
           • <span style={{ color: "#666" }}>IEIF</span> -- ieif.fr (données immobilier et SCPI)<br/>
           • <span style={{ color: "#666" }}>Vanguard Research</span> -- "Dollar Cost Averaging Just Means Taking Risk Later" (2012)
         </div>
-        <div style={{ fontSize: 10, color: "#444", marginTop: 10, fontStyle: "italic" }}>
+        <div style={{ fontSize: 10, color: theme.text5, marginTop: 10, fontStyle: "italic" }}>
           ⚠️ Ces informations sont fournies à titre indicatif et éducatif. Elles ne constituent pas un conseil en investissement. Consultez un conseiller financier agréé pour votre situation personnelle. Taux et plafonds susceptibles d'évoluer.
         </div>
       </div>
@@ -3596,16 +3596,16 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
   const inp=(k,l,t="text",ph="")=>(
     <div style={{marginBottom:14}}>
-      <div style={{fontSize:10,color:"#555",marginBottom:5}}>{l}</div>
+      <div style={{fontSize:10,color:theme.text4,marginBottom:5}}>{l}</div>
       <input type={t} placeholder={ph} value={form[k]||""} onChange={e=>f(k,e.target.value)}
-        style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}} />
+        style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12}} />
     </div>
   );
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const Logo = () => (
-    <div style={{padding:"24px 20px 16px",borderBottom:"1px solid #1A1A1E"}}>
-      <div style={{fontSize:9,letterSpacing:"0.25em",color:"#444",textTransform:"uppercase",marginBottom:3}}>Espace admin</div>
+    <div style={{padding:"24px 20px 16px",borderBottom:`1px solid ${theme.border}`}}>
+      <div style={{fontSize:9,letterSpacing:"0.25em",color:theme.text5,textTransform:"uppercase",marginBottom:3}}>Espace admin</div>
       <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
     </div>
   );
@@ -3625,8 +3625,8 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
           </div>
         </div>
         <div style={{padding:"16px 10px 8px",flex:1,overflowY:"auto"}}>
-          <div style={{fontSize:9,letterSpacing:"0.15em",color:"#333",textTransform:"uppercase",padding:"0 10px",marginBottom:8}}>Clients</div>
-          {loading&&<div style={{color:"#444",fontSize:12,padding:12}}>Chargement...</div>}
+          <div style={{fontSize:9,letterSpacing:"0.15em",color:theme.text6,textTransform:"uppercase",padding:"0 10px",marginBottom:8}}>Clients</div>
+          {loading&&<div style={{color:theme.text5,fontSize:12,padding:12}}>Chargement...</div>}
           {clients.map((c,idx)=>{
             const active=page==="client"&&activeClient?.id===c.id;
             const col=clientColor(idx);
@@ -3637,24 +3637,24 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                   <div style={{width:28,height:28,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:600,color:col,flexShrink:0}}>{initials(c.nom)}</div>
                   <div>
                     <div style={{fontSize:12,fontWeight:500,color:active?"#E2DDD6":"#888"}}>{c.nom}</div>
-                    <div style={{fontSize:10,color:"#444"}}>Client</div>
+                    <div style={{fontSize:10,color:theme.text5}}>Client</div>
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <div style={{padding:"12px 10px",borderTop:"1px solid #1A1A1E"}}>
+        <div style={{padding:"12px 10px",borderTop:`1px solid ${theme.border}`}}>
           <button className="btn" onClick={()=>openModal("client_new")}
             style={{width:"100%",padding:"9px",background:"#C9A96E",border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:11,fontWeight:600,marginBottom:8}}>
             + Nouveau client
           </button>
           <button onClick={onToggleTheme}
-            style={{width:"100%",padding:"7px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#888",fontSize:11,marginBottom:6,fontFamily:"inherit"}}>
+            style={{width:"100%",padding:"7px",background:"none",border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:11,marginBottom:6,fontFamily:"inherit"}}>
             {isDark ? "☀️ Mode clair" : "🌙 Mode sombre"}
           </button>
           <button className="btn" onClick={onLogout}
-            style={{width:"100%",padding:"7px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#555",fontSize:11}}>
+            style={{width:"100%",padding:"7px",background:"none",border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text4,fontSize:11}}>
             Déconnexion
           </button>
         </div>
@@ -3669,29 +3669,29 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
               <button className="mob-btn" onClick={()=>setSidebarOpen(true)}>☰</button>
               <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28}}>Vue d'ensemble</div>
             </div>
-            <div style={{fontSize:12,color:"#555",marginBottom:28}}>{clients.length} clients accompagnés</div>
+            <div style={{fontSize:12,color:theme.text4,marginBottom:28}}>{clients.length} clients accompagnés</div>
             <div className="grid-2">
               {clients.map((c,idx)=>{
                 const col=clientColor(idx);
                 const st=statutStyle[c.statut]||statutStyle["En bonne voie"];
                 return (
                   <div key={c.id} className="cr" onClick={()=>{setActiveClient(c);setPage("client");setTab("synthese");}}
-                    style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20,cursor:"pointer"}}>
+                    style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20,cursor:"pointer"}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <div style={{width:34,height:34,borderRadius:"50%",background:`${col}18`,border:`1.5px solid ${col}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color:col}}>{initials(c.nom)}</div>
                         <div>
                           <div style={{fontSize:14,fontWeight:500}}>{c.nom}</div>
-                          <div style={{fontSize:10,color:"#555"}}>Client</div>
+                          <div style={{fontSize:10,color:theme.text4}}>Client</div>
                         </div>
                       </div>
                       <div className="tag" style={{background:st.bg,color:st.text}}><div style={{width:4,height:4,borderRadius:"50%",background:st.dot,marginRight:5}}/>{c.statut}</div>
                     </div>
-                    <div style={{fontSize:11,color:"#555"}}>Patrimoine cible : <span style={{color:col}}>{fmt(c.patrimoine_cible)}</span></div>
+                    <div style={{fontSize:11,color:theme.text4}}>Patrimoine cible : <span style={{color:col}}>{fmt(c.patrimoine_cible)}</span></div>
                   </div>
                 );
               })}
-              {clients.length===0&&<div style={{color:"#444",fontSize:13,gridColumn:"1/-1"}}>Aucun client.</div>}
+              {clients.length===0&&<div style={{color:theme.text5,fontSize:13,gridColumn:"1/-1"}}>Aucun client.</div>}
             </div>
           </div>
         )}
@@ -3700,26 +3700,26 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
           const st=statutStyle[activeClient.statut]||statutStyle["En bonne voie"];
           return (
             <>
-              <div className="header-pad" style={{borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:"#0C0C0E",zIndex:10}}>
+              <div className="header-pad" style={{borderBottom:`1px solid ${theme.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:theme.bg,zIndex:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <button className="mob-btn" onClick={()=>setSidebarOpen(true)} style={{marginRight:4}}>☰</button>
                   <div style={{width:38,height:38,borderRadius:"50%",background:`${color}18`,border:`2px solid ${color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color}}>{initials(activeClient.nom)}</div>
                   <div>
                     <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20}}>{activeClient.nom}</div>
-                    <div style={{fontSize:10,color:"#555"}}>{activeClient.date_debut?` · Suivi depuis ${activeClient.date_debut}`:""}</div>
+                    <div style={{fontSize:10,color:theme.text4}}>{activeClient.date_debut?` · Suivi depuis ${activeClient.date_debut}`:""}</div>
                   </div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div className="tag" style={{background:st.bg,color:st.text}}><div style={{width:4,height:4,borderRadius:"50%",background:st.dot,marginRight:5}}/>{activeClient.statut}</div>
-                  <button className="btn" onClick={()=>openModal("client_edit")} style={{padding:"5px 12px",background:"#141416",border:"1px solid #222",borderRadius:7,cursor:"pointer",color:"#777",fontSize:11}}>Modifier</button>
-                  <button className="btn" onClick={delClient} style={{padding:"5px 12px",background:"#141416",border:"1px solid #222",borderRadius:7,cursor:"pointer",color:"#E07A7A",fontSize:11}}>Supprimer</button>
+                  <button className="btn" onClick={()=>openModal("client_edit")} style={{padding:"5px 12px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,cursor:"pointer",color:theme.text3,fontSize:11}}>Modifier</button>
+                  <button className="btn" onClick={delClient} style={{padding:"5px 12px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,cursor:"pointer",color:"#E07A7A",fontSize:11}}>Supprimer</button>
                 </div>
               </div>
 
-              <div className="tabs-row" style={{padding:"0 16px",borderBottom:"1px solid #1A1A1E"}}>
+              <div className="tabs-row" style={{padding:"0 16px",borderBottom:`1px solid ${theme.border}`}}>
                 {ALL_TABS.filter(k => !activeClient.onglets_actifs || activeClient.onglets_actifs.includes(k)).map(k => [k, TAB_LABELS[k]]).map(([k,l])=>(
                   <button key={k} className="tb" onClick={()=>setTab(k)}
-                    style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
+                    style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:theme.text5,borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent"}}>
                     {l}
                   </button>
                 ))}
@@ -3746,32 +3746,32 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                         {label:"Patrimoine cible",val:fmt(activeClient.patrimoine_cible)},
                         {label:"Nb produits",val:produits.length},
                       ].map((k,i)=>(
-                        <div key={i} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:10,padding:"14px 16px"}}>
-                          <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:5}}>{k.label}</div>
+                        <div key={i} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:10,padding:"14px 16px"}}>
+                          <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:5}}>{k.label}</div>
                           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24}}>{k.val}</div>
                         </div>
                       ))}
                     </div>
                     <div className="grid-split" style={{marginBottom:16}}>
-                      <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
-                        <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
+                      <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
+                        <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                         {parCategorie.length>0?<>
                           <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
-                          {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
-                        </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
+                          {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:theme.text3}}>{c.name}</span></div><span style={{fontSize:11,color:theme.text5}}>{fmt(c.value)}</span></div>)}
+                        </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
                       </div>
-                      <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
+                      <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                          <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em"}}>Produits</div>
+                          <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Produits</div>
                           <button className="btn" onClick={()=>openModal("produit_new")} style={{padding:"5px 12px",background:color,border:"none",borderRadius:6,cursor:"pointer",color:"#0C0C0E",fontSize:10,fontWeight:600}}>+ Ajouter</button>
                         </div>
-                        {produits.length===0&&<div style={{color:"#444",fontSize:12}}>Aucun produit</div>}
+                        {produits.length===0&&<div style={{color:theme.text5,fontSize:12}}>Aucun produit</div>}
                         {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                           <div key={cat} style={{marginBottom:10}}>
                             <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:5}}>{cat}</div>
                             {prods.map(p=>{const last=avoirs.filter(a=>a.produit_id===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];return(
-                              <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"#141416",borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
-                                <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:"#CCC"}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:"#555"}}>· {fmtDate(last.date)}</span>}</div>
+                              <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:theme.inputBg,borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:theme.text2}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:theme.text4}}>· {fmtDate(last.date)}</span>}</div>
                                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                                   <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
                                   <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
@@ -3792,7 +3792,7 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                       <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20}}>Objectifs</div>
                       <button className="btn" onClick={()=>openModal("objectif_new")} style={{padding:"8px 16px",background:color,border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:11,fontWeight:600}}>+ Nouvel objectif</button>
                     </div>
-                    {objectifs.length===0&&<div style={{color:"#444",fontSize:13}}>Aucun objectif défini.</div>}
+                    {objectifs.length===0&&<div style={{color:theme.text5,fontSize:13}}>Aucun objectif défini.</div>}
                     <div style={{display:"flex",flexDirection:"column",gap:16}}>
                       {objectifs.map((obj,oi)=>{
                         const objJalons=jalons.filter(j=>j.objectif_id===obj.id);
@@ -3802,36 +3802,36 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                         const prog=pct(patObj,obj.montant_cible);
                         const ocol=COLORS[(oi+1)%COLORS.length];
                         return(
-                          <div key={obj.id} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,overflow:"hidden"}}>
-                            <div style={{padding:"18px 20px",borderBottom:"1px solid #1A1A1E"}}>
+                          <div key={obj.id} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,overflow:"hidden"}}>
+                            <div style={{padding:"18px 20px",borderBottom:`1px solid ${theme.border}`}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                                 <div><div style={{fontSize:15,fontWeight:500,marginBottom:3}}>{obj.nom}</div>{obj.description&&<div style={{fontSize:11,color:"#666"}}>{obj.description}</div>}</div>
                                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                                   <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:ocol}}>{fmt(obj.montant_cible)}</div>
-                                  <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#888",fontSize:10}}>✏️</button>
-                                  <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
+                                  <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:`1px solid ${theme.border2}`,borderRadius:6,cursor:"pointer",color:theme.text3,fontSize:10}}>✏️</button>
+                                  <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:`1px solid ${theme.border2}`,borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
                                 </div>
                               </div>
                               <div style={{marginBottom:10}}>
                                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                                  <span style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
+                                  <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
                                   <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                                 </div>
-                                {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
+                                {likedProds.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit lié</div>:
                                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                               </div>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}>
+                              <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginBottom:5}}>
                                 <span>{fmt(patObj)} liés</span>
                                 <button onClick={()=>setOpenProgObj(openProgObj===obj.id?null:obj.id)} style={{background:"none",border:"none",cursor:"pointer",color:ocol,fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                                   <span style={{fontWeight:600}}>{prog}%</span>
                                   <span style={{fontSize:8}}>{openProgObj===obj.id?"▲":"▼"}</span>
                                 </button>
                               </div>
-                              <div style={{background:"#1A1A1E",borderRadius:3,height:5,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3,transition:"width 0.4s"}}/></div>
+                              <div style={{background:theme.bg4,borderRadius:3,height:5,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3,transition:"width 0.4s"}}/></div>
                               {openProgObj===obj.id&&(()=>{
                                 const likedProdIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
                                 const allAvoirsLiked=avoirs.filter(a=>likedProdIds.includes(a.produit_id)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-                                if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:"#444",fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
+                                if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:theme.text5,fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
                                 const byDate={};
                                 const lkProg={};
                                 allAvoirsLiked.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
@@ -3841,8 +3841,8 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                                   return{date:fmtDate(d),ts:new Date(d).getTime(),pct:obj.montant_cible>0?Math.min(100,Math.round((tot/obj.montant_cible)*100)):0,total:tot};
                                 });
                                 return(
-                                  <div style={{background:"#141416",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
-                                    <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
+                                  <div style={{background:theme.inputBg,borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                                    <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
                                     <ResponsiveContainer width="100%" height={120}>
                                       <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
                                         <defs><linearGradient id={`g${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
@@ -3852,7 +3852,7 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                                         <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#g${obj.id})`} dot={{fill:ocol,r:3}}/>
                                       </AreaChart>
                                     </ResponsiveContainer>
-                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginTop:6}}>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginTop:6}}>
                                       <span>Départ : {progData[0]?.pct}%</span>
                                       <span>Actuel : <span style={{color:ocol,fontWeight:600}}>{prog}%</span></span>
                                       <span>Objectif : {fmt(obj.montant_cible)}</span>
@@ -3863,21 +3863,21 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                             </div>
                             <div style={{padding:"14px 20px"}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                                <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em"}}>Jalons ({objJalons.length})</div>
+                                <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Jalons ({objJalons.length})</div>
                                 <button className="btn" onClick={()=>openModal("jalon_new",{objectif_id:obj.id})} style={{padding:"4px 10px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:6,cursor:"pointer",color:ocol,fontSize:10}}>+ Jalon</button>
                               </div>
-                              {objJalons.length===0&&<div style={{color:"#444",fontSize:11}}>Aucun jalon</div>}
+                              {objJalons.length===0&&<div style={{color:theme.text5,fontSize:11}}>Aucun jalon</div>}
                               <div style={{display:"flex",flexDirection:"column",gap:5}}>
                                 {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
-                                  <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                                  <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:theme.inputBg,borderRadius:8}}>
+                                    <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:theme.bg4,border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                                     <div style={{flex:1}}>
                                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                         <span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>
-                                        <div style={{display:"flex",alignItems:"center",gap:8}}>{j.montant_cible>0&&<span style={{fontSize:11,color:ocol}}>{fmt(j.montant_cible)}</span>}<button onClick={()=>delJalon(j.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#555",fontSize:11}}>✕</button></div>
+                                        <div style={{display:"flex",alignItems:"center",gap:8}}>{j.montant_cible>0&&<span style={{fontSize:11,color:ocol}}>{fmt(j.montant_cible)}</span>}<button onClick={()=>delJalon(j.id)} style={{background:"none",border:"none",cursor:"pointer",color:theme.text4,fontSize:11}}>✕</button></div>
                                       </div>
-                                      {j.produit_lie&&<div style={{fontSize:10,color:"#555",marginTop:2}}>📦 {j.produit_lie}</div>}
-                                      {j.moyens&&<div style={{fontSize:10,color:"#555",marginTop:2,fontStyle:"italic"}}>→ {j.moyens}</div>}
+                                      {j.produit_lie&&<div style={{fontSize:10,color:theme.text4,marginTop:2}}>📦 {j.produit_lie}</div>}
+                                      {j.moyens&&<div style={{fontSize:10,color:theme.text4,marginTop:2,fontStyle:"italic"}}>→ {j.moyens}</div>}
                                     </div>
                                   </div>
                                 );})}
@@ -3910,18 +3910,18 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
       {/* MODALS */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
-          <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
+          <div className="modal-box" style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:420,maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{client_new:"Nouveau client",client_edit:"Modifier",produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
             {(modal.type==="client_new"||modal.type==="client_edit")&&<>
   {inp("nom","Nom complet *","text","Sophie Martin")}
   {inp("patrimoine_cible","Patrimoine cible (€)","number","250000")}
   {inp("date_debut","Suivi depuis","text","Jan 2024")}
   <div style={{marginBottom:14}}>
-    <div style={{fontSize:10,color:"#555",marginBottom:5}}>Statut</div>
-    <select value={form.statut||"En bonne voie"} onChange={e=>f("statut",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{STATUTS.map(s=><option key={s}>{s}</option>)}</select>
+    <div style={{fontSize:10,color:theme.text4,marginBottom:5}}>Statut</div>
+    <select value={form.statut||"En bonne voie"} onChange={e=>f("statut",e.target.value)} style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12}}>{STATUTS.map(s=><option key={s}>{s}</option>)}</select>
   </div>
   <div style={{marginBottom:20}}>
-    <div style={{fontSize:10,color:"#555",marginBottom:8}}>Onglets accessibles</div>
+    <div style={{fontSize:10,color:theme.text4,marginBottom:8}}>Onglets accessibles</div>
     <div style={{display:"flex",flexDirection:"column",gap:6}}>
       {ALL_TABS.map(tab=>{
         const active=(form.onglets_actifs||ALL_TABS).includes(tab);
@@ -3930,8 +3930,8 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
             const cur=form.onglets_actifs||ALL_TABS;
             const next=active?cur.filter(t=>t!==tab):[...cur,tab];
             f("onglets_actifs",next);
-          }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?"#1A2F1F":"#141416",border:`1px solid ${active?"#5EBF7A30":"#1A1A1E"}`,borderRadius:8,cursor:"pointer"}}>
-            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":"#1A1A1E",border:`1.5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
+          }} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",background:active?theme.greenBg:theme.inputBg,border:`1px solid ${active?"#5EBF7A30":theme.border}`,borderRadius:8,cursor:"pointer"}}>
+            <div style={{width:16,height:16,borderRadius:4,background:active?"#5EBF7A":theme.bg4,border:`1.5px solid ${active?"#5EBF7A":"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{active?"✓":""}</div>
             <span style={{fontSize:12,color:active?"#E2DDD6":"#777"}}>{TAB_LABELS[tab]}</span>
           </div>
         );
@@ -3940,22 +3940,22 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   </div>
 </>
             }
-            {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
-            {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
+            {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:theme.text4,marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
+            {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:theme.text4,marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12,fontFamily:"inherit"}}/></div></>}
             {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Retraite anticipée")}{inp("montant_cible","Montant cible (€) *","number","300000")}{inp("description","Description","text","Partir à 55 ans")}</>}
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Ouvrir un PEA")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA Bourse Direct")}{inp("moyens","Moyens","text","200€/mois dès janvier")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:12,color:"#888",marginBottom:14}}>Coche les produits qui contribuent à cet objectif :</div>
+                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits qui contribuent à cet objectif :</div>
                 {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                   <div key={cat} style={{marginBottom:12}}>
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:theme.inputBg,border:`1px solid ${checked?CAT_COLORS[cat]+"40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:theme.bg4,border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
-                        <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
+                        <span style={{fontSize:11,color:theme.text4,marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
                     );})}
                   </div>
@@ -3964,7 +3964,7 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
             )}
             <div style={{display:"flex",gap:8}}>
               <button className="btn" onClick={save} disabled={saving} style={{flex:1,padding:10,background:"#C9A96E",border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
-              <button onClick={()=>setModal(null)} style={{padding:"10px 16px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12}}>Annuler</button>
+              <button onClick={()=>setModal(null)} style={{padding:"10px 16px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:12}}>Annuler</button>
             </div>
           </div>
         </div>
@@ -4063,32 +4063,32 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const f=(k,v)=>setForm(p=>({...p,[k]:v}));
   const inp=(k,l,t="text",ph="")=>(
     <div style={{marginBottom:14}}>
-      <div style={{fontSize:10,color:"#555",marginBottom:5}}>{l}</div>
+      <div style={{fontSize:10,color:theme.text4,marginBottom:5}}>{l}</div>
       <input type={t} placeholder={ph} value={form[k]||""} onChange={e=>f(k,e.target.value)}
-        style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}} />
+        style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12}} />
     </div>
   );
 
-  if (loading) return <div style={{minHeight:"100vh",background:"#0C0C0E",display:"flex",alignItems:"center",justifyContent:"center",color:"#555",fontFamily:"'DM Sans',sans-serif"}}>Chargement...</div>;
+  if (loading) return <div style={{minHeight:"100vh",background:theme.bg,display:"flex",alignItems:"center",justifyContent:"center",color:theme.text4,fontFamily:"'DM Sans',sans-serif"}}>Chargement...</div>;
   if (!client) return (
-    <div style={{minHeight:"100vh",background:"#0C0C0E",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",color:"#555",flexDirection:"column",gap:16}}>
+    <div style={{minHeight:"100vh",background:theme.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",color:theme.text4,flexDirection:"column",gap:16}}>
       <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
       <div style={{fontSize:13}}>Aucun profil trouvé. Contacte ton conseiller.</div>
-      <button onClick={onToggleTheme} style={{padding:"8px 14px",background:"none",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#888",fontSize:11,fontFamily:"inherit"}}>
+      <button onClick={onToggleTheme} style={{padding:"8px 14px",background:"none",border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:11,fontFamily:"inherit"}}>
         {isDark ? "☀️" : "🌙"}
       </button>
-      <button onClick={onLogout} style={{padding:"8px 20px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12,fontFamily:"inherit"}}>Déconnexion</button>
+      <button onClick={onLogout} style={{padding:"8px 20px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:12,fontFamily:"inherit"}}>Déconnexion</button>
     </div>
   );
 
   const st = statutStyle[client.statut]||statutStyle["En bonne voie"];
 
   return (
-    <div style={{minHeight:"100vh",background:"#0C0C0E",fontFamily:"'DM Sans',sans-serif",color:"#E2DDD6"}}>
+    <div style={{minHeight:"100vh",background:theme.bg,fontFamily:"'DM Sans',sans-serif",color:theme.text}}>
       <style>{CSS}</style>
 
       {/* Header */}
-      <div className="header-pad" style={{borderBottom:"1px solid #1A1A1E",display:"flex",alignItems:"center",justifyContent:"space-between",background:"#0F0F11"}}>
+      <div className="header-pad" style={{borderBottom:`1px solid ${theme.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",background:theme.bg2}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,color:"#C9A96E",letterSpacing:"0.08em"}}>Rob'Invest</div>
           <div style={{width:1,height:20,background:"#222"}}/>
@@ -4096,22 +4096,22 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             <div style={{width:32,height:32,borderRadius:"50%",background:`${color}18`,border:`1.5px solid ${color}50`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:600,color}}>{initials(client.nom)}</div>
             <div>
               <div style={{fontSize:13,fontWeight:500}}>{client.nom}</div>
-              <div style={{fontSize:10,color:"#555"}}>Mon espace patrimonial</div>
+              <div style={{fontSize:10,color:theme.text4}}>Mon espace patrimonial</div>
             </div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div className="tag" style={{background:st.bg,color:st.text}}><div style={{width:4,height:4,borderRadius:"50%",background:st.dot,marginRight:5}}/>{client.statut}</div>
-          <button onClick={onLogout} style={{padding:"6px 14px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit"}} className="hide-mob">Déconnexion</button>
-          <button onClick={onLogout} style={{padding:"6px 10px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit",display:"none"}} className="show-mob">↩</button>
+          <button onClick={onLogout} style={{padding:"6px 14px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit"}} className="hide-mob">Déconnexion</button>
+          <button onClick={onLogout} style={{padding:"6px 10px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:"#666",fontSize:11,fontFamily:"inherit",display:"none"}} className="show-mob">↩</button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="tabs-row" style={{borderBottom:"1px solid #1A1A1E",background:"#0F0F11"}}>
+      <div className="tabs-row" style={{borderBottom:`1px solid ${theme.border}`,background:theme.bg2}}>
         {ALL_TABS.filter(k => !client.onglets_actifs || client.onglets_actifs.includes(k)).map(k => [k, CLIENT_TAB_LABELS[k]]).map(([k,l])=>(
           <button key={k} className="tb" onClick={()=>setTab(k)}
-            style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:"#444",borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
+            style={{background:"none",border:"none",cursor:"pointer",padding:"13px 18px",fontSize:12,fontWeight:500,color:tab===k?color:theme.text5,borderBottom:tab===k?`2px solid ${color}`:"2px solid transparent",fontFamily:"inherit"}}>
             {l}
           </button>
         ))}
@@ -4134,31 +4134,31 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
           <div>
             <div className="grid-2" style={{marginBottom:20}}>
               {[{label:"Patrimoine total",val:fmt(patrimoineTotal)},{label:"Patrimoine cible",val:fmt(client.patrimoine_cible)}].map((k,i)=>(
-                <div key={i} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:"18px 20px"}}>
-                  <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:6}}>{k.label}</div>
+                <div key={i} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:"18px 20px"}}>
+                  <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:6}}>{k.label}</div>
                   <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28}}>{k.val}</div>
                 </div>
               ))}
             </div>
             <div className="grid-split">
-              <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
-                <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
+              <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
+                <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
                 {parCategorie.length>0?<>
                   <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
-                  {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:"#777"}}>{c.name}</span></div><span style={{fontSize:11,color:"#999"}}>{fmt(c.value)}</span></div>)}
-                </>:<div style={{color:"#444",fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
+                  {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:theme.text3}}>{c.name}</span></div><span style={{fontSize:11,color:theme.text5}}>{fmt(c.value)}</span></div>)}
+                </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
               </div>
-              <div style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,padding:20}}>
+              <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                  <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em"}}>Mes produits</div>
+                  <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Mes produits</div>
                   <button className="btn" onClick={()=>openModal("produit_new")} style={{padding:"5px 12px",background:color,border:"none",borderRadius:6,cursor:"pointer",color:"#0C0C0E",fontSize:10,fontWeight:600}}>+ Ajouter</button>
                 </div>
                 {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                   <div key={cat} style={{marginBottom:10}}>
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:5}}>{cat}</div>
                     {prods.map(p=>{const last=avoirs.filter(a=>a.produit_id===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];return(
-                      <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"#141416",borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:"#CCC"}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:"#555"}}>· {fmtDate(last.date)}</span>}</div>
+                      <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:theme.inputBg,borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:theme.text2}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:theme.text4}}>· {fmtDate(last.date)}</span>}</div>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
                           <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
@@ -4179,7 +4179,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
               <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20}}>Mes objectifs</div>
               <button className="btn" onClick={()=>openModal("objectif_new")} style={{padding:"8px 16px",background:color,border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:11,fontWeight:600}}>+ Ajouter</button>
             </div>
-            {objectifs.length===0&&<div style={{color:"#444",fontSize:13}}>Aucun objectif défini.</div>}
+            {objectifs.length===0&&<div style={{color:theme.text5,fontSize:13}}>Aucun objectif défini.</div>}
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
               {objectifs.map((obj,oi)=>{
                 const objJalons=jalons.filter(j=>j.objectif_id===obj.id);
@@ -4189,36 +4189,36 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                 const prog=pct(patObj,obj.montant_cible);
                 const ocol=COLORS[(oi+1)%COLORS.length];
                 return(
-                  <div key={obj.id} style={{background:"#0F0F11",border:"1px solid #1A1A1E",borderRadius:12,overflow:"hidden"}}>
-                    <div style={{padding:"18px 20px",borderBottom:"1px solid #1A1A1E"}}>
+                  <div key={obj.id} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,overflow:"hidden"}}>
+                    <div style={{padding:"18px 20px",borderBottom:`1px solid ${theme.border}`}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                         <div><div style={{fontSize:15,fontWeight:500,marginBottom:3}}>{obj.nom}</div>{obj.description&&<div style={{fontSize:11,color:"#666"}}>{obj.description}</div>}</div>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,color:ocol}}>{fmt(obj.montant_cible)}</div>
-                          <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#888",fontSize:10}}>✏️</button>
-                          <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:"1px solid #2A2A2A",borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
+                          <button onClick={()=>openModal("objectif_edit",{objectif_id:obj.id,nom:obj.nom,montant_cible:obj.montant_cible,description:obj.description||""})} style={{padding:"4px 8px",background:"none",border:`1px solid ${theme.border2}`,borderRadius:6,cursor:"pointer",color:theme.text3,fontSize:10}}>✏️</button>
+                          <button onClick={()=>delObjectif(obj.id)} style={{padding:"4px 8px",background:"none",border:`1px solid ${theme.border2}`,borderRadius:6,cursor:"pointer",color:"#E07A7A",fontSize:10}}>✕</button>
                         </div>
                       </div>
                       <div style={{marginBottom:10}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                          <span style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
+                          <span style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em"}}>Produits liés</span>
                           <button onClick={()=>openModal("lier_produit",{objectif_id:obj.id,selectedProduits:likedIds})} style={{padding:"2px 8px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:5,cursor:"pointer",color:ocol,fontSize:10}}>Gérer</button>
                         </div>
-                        {likedProds.length===0?<div style={{fontSize:11,color:"#444",fontStyle:"italic"}}>Aucun produit lié</div>:
+                        {likedProds.length===0?<div style={{fontSize:11,color:theme.text5,fontStyle:"italic"}}>Aucun produit lié</div>:
                           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{likedProds.map(p=><div key={p.id} style={{padding:"3px 10px",background:`${CAT_COLORS[p.categorie]}15`,border:`1px solid ${CAT_COLORS[p.categorie]}30`,borderRadius:20,fontSize:11,color:CAT_COLORS[p.categorie]}}>{p.nom} -- {fmt(lastAvoir(p.id))}</div>)}</div>}
                       </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginBottom:5}}>
                         <span>{fmt(patObj)} accumulés</span>
                         <button onClick={()=>setOpenProgObj(openProgObj===obj.id?null:obj.id)} style={{background:"none",border:"none",cursor:"pointer",color:ocol,fontSize:10,fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                           <span style={{fontWeight:600}}>{prog}%</span>
                           <span style={{fontSize:8}}>{openProgObj===obj.id?"▲":"▼"}</span>
                         </button>
                       </div>
-                      <div style={{background:"#1A1A1E",borderRadius:3,height:6,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
+                      <div style={{background:theme.bg4,borderRadius:3,height:6,marginBottom:openProgObj===obj.id?10:0}}><div style={{width:`${prog}%`,height:"100%",background:ocol,borderRadius:3}}/></div>
                       {openProgObj===obj.id&&(()=>{
                         const likedProdIds=objProduits.filter(op=>op.objectif_id===obj.id).map(op=>op.produit_id);
                         const allAvoirsLiked=avoirs.filter(a=>likedProdIds.includes(a.produit_id)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-                        if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:"#444",fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
+                        if(!allAvoirsLiked.length) return <div style={{fontSize:11,color:theme.text5,fontStyle:"italic",marginBottom:8}}>Aucun avoir renseigné sur les produits liés.</div>;
                         const byDate={};
                         const lkProg={};
                         allAvoirsLiked.forEach(a=>{if(!byDate[a.date])byDate[a.date]={};byDate[a.date][a.produit_id]=a.montant;});
@@ -4228,8 +4228,8 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                           return{date:fmtDate(d),ts:new Date(d).getTime(),pct:obj.montant_cible>0?Math.min(100,Math.round((tot/obj.montant_cible)*100)):0,total:tot};
                         });
                         return(
-                          <div style={{background:"#141416",borderRadius:8,padding:"12px 14px",marginBottom:10}}>
-                            <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
+                          <div style={{background:theme.inputBg,borderRadius:8,padding:"12px 14px",marginBottom:10}}>
+                            <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10}}>Progression vers l'objectif</div>
                             <ResponsiveContainer width="100%" height={120}>
                               <AreaChart data={progData} margin={{top:4,right:4,bottom:0,left:0}}>
                                 <defs><linearGradient id={`gc${obj.id}`} x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={ocol} stopOpacity={0.3}/><stop offset="95%" stopColor={ocol} stopOpacity={0}/></linearGradient></defs>
@@ -4239,7 +4239,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                                 <Area type="monotone" dataKey="pct" stroke={ocol} strokeWidth={2} fill={`url(#gc${obj.id})`} dot={{fill:ocol,r:3}}/>
                               </AreaChart>
                             </ResponsiveContainer>
-                            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#555",marginTop:6}}>
+                            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:theme.text4,marginTop:6}}>
                               <span>Départ : {progData[0]?.pct}%</span>
                               <span>Actuel : <span style={{color:ocol,fontWeight:600}}>{prog}%</span></span>
                               <span>Objectif : {fmt(obj.montant_cible)}</span>
@@ -4250,22 +4250,22 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
                     </div>
                     {objJalons.length>0&&(
                       <div style={{padding:"14px 20px"}}>
-                        <div style={{fontSize:9,color:"#444",textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:10}}>Jalons</div>
+                        <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:10}}>Jalons</div>
                         <div style={{display:"flex",flexDirection:"column",gap:5}}>
                           {objJalons.map((j,ji)=>{const done=patObj>=(j.montant_cible||0);return(
-                            <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:"#141416",borderRadius:8}}>
-                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:"#1A1A1E",border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
+                            <div key={j.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",background:theme.inputBg,borderRadius:8}}>
+                              <div style={{width:20,height:20,borderRadius:"50%",background:done?`${ocol}20`:theme.bg4,border:`1.5px solid ${done?ocol:"#2A2A2A"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:done?ocol:"#555",flexShrink:0,marginTop:1}}>{done?"✓":ji+1}</div>
                               <div style={{flex:1}}>
                                 <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:done?"#E2DDD6":"#888"}}>{j.nom}</span>{j.montant_cible>0&&<span style={{fontSize:11,color:ocol}}>{fmt(j.montant_cible)}</span>}</div>
-                                {j.produit_lie&&<div style={{fontSize:10,color:"#555",marginTop:2}}>📦 {j.produit_lie}</div>}
-                                {j.moyens&&<div style={{fontSize:10,color:"#555",marginTop:2,fontStyle:"italic"}}>→ {j.moyens}</div>}
+                                {j.produit_lie&&<div style={{fontSize:10,color:theme.text4,marginTop:2}}>📦 {j.produit_lie}</div>}
+                                {j.moyens&&<div style={{fontSize:10,color:theme.text4,marginTop:2,fontStyle:"italic"}}>→ {j.moyens}</div>}
                               </div>
                             </div>
                           );})}
                         </div>
                       </div>
                     )}
-                    <div style={{padding:"10px 20px",borderTop:"1px solid #1A1A1E",display:"flex",gap:8}}>
+                    <div style={{padding:"10px 20px",borderTop:`1px solid ${theme.border}`,display:"flex",gap:8}}>
                       <button className="btn" onClick={()=>openModal("jalon_new",{objectif_id:obj.id})} style={{padding:"5px 12px",background:`${ocol}15`,border:`1px solid ${ocol}30`,borderRadius:6,cursor:"pointer",color:ocol,fontSize:10}}>+ Jalon</button>
                     </div>
                   </div>
@@ -4290,24 +4290,24 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
       {/* MODALS CLIENT */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
-          <div className="modal-box" style={{background:"#0F0F11",border:"1px solid #222",borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
+          <div className="modal-box" style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:14,padding:28,width:modal.type==="lier_produit"?380:400,maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,marginBottom:20}}>{{produit_new:"Nouveau produit",avoir_new:`Avoir -- ${modal.produit_nom||""}`,objectif_new:"Nouvel objectif",objectif_edit:"Modifier l'objectif",jalon_new:"Nouveau jalon",lier_produit:"Produits liés"}[modal.type]}</div>
-            {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
-            {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:"#555",marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:"#141416",border:"1px solid #222",borderRadius:7,padding:"9px 11px",color:"#CCC",fontSize:12,fontFamily:"inherit"}}/></div></>}
+            {modal.type==="produit_new"&&<>{inp("nom","Nom *","text","Livret A, PEA...")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:theme.text4,marginBottom:5}}>Catégorie</div><select value={form.categorie||"Épargne"} onChange={e=>f("categorie",e.target.value)} style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12}}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></div></>}
+            {modal.type==="avoir_new"&&<>{inp("montant","Montant (€) *","number","12000")}<div style={{marginBottom:20}}><div style={{fontSize:10,color:theme.text4,marginBottom:5}}>Date *</div><input type="date" value={form.date||""} onChange={e=>f("date",e.target.value)} style={{width:"100%",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:7,padding:"9px 11px",color:theme.text2,fontSize:12,fontFamily:"inherit"}}/></div></>}
             {(modal.type==="objectif_new"||modal.type==="objectif_edit")&&<>{inp("nom","Nom *","text","Mon objectif")}{inp("montant_cible","Montant cible (€) *","number","50000")}{inp("description","Description","text","Description de mon objectif")}</>}
             {modal.type==="jalon_new"&&<>{inp("nom","Nom *","text","Étape 1")}{inp("montant_cible","Montant cible (€)","number","10000")}{inp("produit_lie","Produit associé","text","PEA")}{inp("moyens","Comment y arriver","text","200€/mois")}</>}
             {modal.type==="lier_produit"&&(
               <div style={{marginBottom:20}}>
-                <div style={{fontSize:12,color:"#888",marginBottom:14}}>Coche les produits liés à cet objectif :</div>
+                <div style={{fontSize:12,color:theme.text3,marginBottom:14}}>Coche les produits liés à cet objectif :</div>
                 {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
                   <div key={cat} style={{marginBottom:12}}>
                     <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6}}>{cat}</div>
                     {prods.map(p=>{const checked=(modal.selectedProduits||[]).includes(p.id);return(
                       <div key={p.id} onClick={()=>{const cur=modal.selectedProduits||[];const next=checked?cur.filter(id=>id!==p.id):[...cur,p.id];setModal(m=>({...m,selectedProduits:next}));}}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:"#141416",border:`1px solid ${checked?CAT_COLORS[cat]+"40":"#1A1A1E"}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
-                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:"#1A1A1E",border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:checked?`${CAT_COLORS[cat]}10`:theme.inputBg,border:`1px solid ${checked?CAT_COLORS[cat]+"40":theme.border}`,borderRadius:8,marginBottom:4,cursor:"pointer"}}>
+                        <div style={{width:16,height:16,borderRadius:4,background:checked?CAT_COLORS[cat]:theme.bg4,border:`1.5px solid ${checked?CAT_COLORS[cat]:"#333"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#0C0C0E",flexShrink:0}}>{checked?"✓":""}</div>
                         <span style={{fontSize:12,color:checked?"#E2DDD6":"#888"}}>{p.nom}</span>
-                        <span style={{fontSize:11,color:"#555",marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
+                        <span style={{fontSize:11,color:theme.text4,marginLeft:"auto"}}>{fmt(lastAvoir(p.id))}</span>
                       </div>
                     );})}
                   </div>
@@ -4316,7 +4316,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             )}
             <div style={{display:"flex",gap:8}}>
               <button className="btn" onClick={saveModal} disabled={saving} style={{flex:1,padding:10,background:"#C9A96E",border:"none",borderRadius:8,cursor:"pointer",color:"#0C0C0E",fontSize:12,fontWeight:600}}>{saving?"...":"Enregistrer"}</button>
-              <button onClick={()=>setModal(null)} style={{padding:"10px 16px",background:"#141416",border:"1px solid #222",borderRadius:8,cursor:"pointer",color:"#777",fontSize:12}}>Annuler</button>
+              <button onClick={()=>setModal(null)} style={{padding:"10px 16px",background:theme.inputBg,border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:12}}>Annuler</button>
             </div>
           </div>
         </div>
