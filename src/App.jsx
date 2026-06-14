@@ -2195,7 +2195,7 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
   return (
     <div>
       {/* Sub-tabs */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid #1A1A1E" }}>
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: `1px solid ${theme.border}` }}>
         {[["synthese", "Synthèse"], ["evolution", "Évolution"], ["revenus", "Revenus"]].map(([k, l]) => (
           <button key={k} onClick={() => setSubTab(k)}
             style={{ background: "none", border: "none", cursor: "pointer", padding: "10px 20px", fontSize: 12, fontWeight: 500, color: subTab === k ? color : "#555", borderBottom: subTab === k ? `2px solid ${color}` : "2px solid transparent", fontFamily: "inherit" }}>
@@ -2228,8 +2228,8 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
 
           <div className="grid-split" style={{ marginBottom: 16 }}>
             {/* Pie */}
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
-              <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Répartition</div>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
+              <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>Répartition</div>
               {parCategorieAvecImmo.length > 0 ? <>
                 <ResponsiveContainer width="100%" height={140}>
                   <PieChart><Pie data={parCategorieAvecImmo} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie>
@@ -2238,17 +2238,17 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
                 </ResponsiveContainer>
                 {parCategorieAvecImmo.map((c, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 6, height: 6, borderRadius: "50%", background: c.color }} /><span style={{ fontSize: 11, color: "#777" }}>{c.name}</span></div>
-                    <span style={{ fontSize: 11, color: "#999" }}>{fmt(c.value)}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}><div style={{ width: 6, height: 6, borderRadius: "50%", background: c.color }} /><span style={{ fontSize: 11, color: theme.text3 }}>{c.name}</span></div>
+                    <span style={{ fontSize: 11, color: theme.text5 }}>{fmt(c.value)}</span>
                   </div>
                 ))}
-              </> : <div style={{ color: "#444", fontSize: 12, textAlign: "center", paddingTop: 20 }}>Aucun produit</div>}
+              </> : <div style={{ color: theme.text5, fontSize: 12, textAlign: "center", paddingTop: 20 }}>Aucun produit</div>}
             </div>
 
             {/* Produits */}
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 20 }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em" }}>Produits</div>
+                <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em" }}>Produits</div>
                 <button onClick={onAddProduit} style={{ padding: "5px 12px", background: color, border: "none", borderRadius: 6, cursor: "pointer", color: "#0C0C0E", fontSize: 10, fontWeight: 600 }}>+ Ajouter</button>
               </div>
               {produits.length === 0 && biensImmo.length === 0 && <div style={{ color: theme.text5, fontSize: 12 }}>Aucun produit</div>}
@@ -2261,11 +2261,11 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
                     {prods.map(p => {
                       const last = avoirs.filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
                       return (
-                        <div key={p.id} className="row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", background: "#141416", borderRadius: 8, marginBottom: 3, transition: "background 0.15s" }}>
+                        <div key={p.id} className="row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "7px 10px", background: theme.inputBg, borderRadius: 8, marginBottom: 3, transition: "background 0.15s" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                             <div style={{ width: 6, height: 6, borderRadius: "50%", background: CAT_COLORS[cat] }} />
-                            <span style={{ fontSize: 12, color: "#CCC" }}>{p.nom}</span>
-                            {last && <span style={{ fontSize: 10, color: "#555" }}>· {fmtDate(last.date)}</span>}
+                            <span style={{ fontSize: 12, color: theme.text2 }}>{p.nom}</span>
+                            {last && <span style={{ fontSize: 10, color: theme.text4 }}>· {fmtDate(last.date)}</span>}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 13, fontWeight: 500 }}>{last ? fmt(last.montant) : "--"}</span>
@@ -2336,8 +2336,8 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
               </div>
           }
           {produits.length > 0 && (
-            <div style={{ background: "#0F0F11", border: "1px solid #1A1A1E", borderRadius: 12, padding: 24 }}>
-              <div style={{ fontSize: 9, color: "#444", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Par produit</div>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 12, padding: 24 }}>
+              <div style={{ fontSize: 9, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 16 }}>Par produit</div>
               {produits.map((p, pi) => {
                 const pA = avoirs.filter(a => a.produit_id === p.id).sort((a, b) => new Date(a.date) - new Date(b.date));
                 if (!pA.length) return null;
@@ -2346,13 +2346,13 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
                   <div key={p.id} style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                       <div style={{ width: 6, height: 6, borderRadius: "50%", background: pc }} />
-                      <span style={{ fontSize: 11, color: "#888" }}>{p.nom}</span>
+                      <span style={{ fontSize: 11, color: theme.text3 }}>{p.nom}</span>
                       <span style={{ padding: "2px 8px", background: `${CAT_COLORS[p.categorie]}15`, borderRadius: 20, fontSize: 10, color: CAT_COLORS[p.categorie] }}>{p.categorie}</span>
                     </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {pA.map((a, ai) => (
-                        <div key={ai} style={{ padding: "6px 12px", background: "#141416", borderRadius: 8 }}>
-                          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>{fmtDate(a.date)}</div>
+                        <div key={ai} style={{ padding: "6px 12px", background: theme.inputBg, borderRadius: 8 }}>
+                          <div style={{ fontSize: 10, color: theme.text4, marginBottom: 2 }}>{fmtDate(a.date)}</div>
                           <div style={{ fontSize: 12, color: pc, fontWeight: 500 }}>{fmt(a.montant)}</div>
                         </div>
                       ))}
