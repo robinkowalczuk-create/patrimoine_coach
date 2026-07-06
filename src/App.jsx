@@ -136,6 +136,38 @@ const LIGHT_THEME = {
 const ThemeContext = React.createContext(DARK_THEME);
 function useTheme() { return React.useContext(ThemeContext); }
 
+const ToastContext = React.createContext(null);
+function useToast() { return React.useContext(ToastContext); }
+
+function ToastProvider({ children }) {
+  const [toasts, setToasts] = React.useState([]);
+  function addToast(message, type, duration) {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type: type || "toast-info" }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration || 3500);
+  }
+  const toast = {
+    success: function(msg) { addToast(msg, "toast-success"); },
+    error: function(msg) { addToast(msg, "toast-error", 5000); },
+    info: function(msg) { addToast(msg, "toast-info"); },
+  };
+  return (
+    <ToastContext.Provider value={toast}>
+      {children}
+      <div className="toast-container">
+        {toasts.map(function(t) {
+          return (
+            <div key={t.id} className={"toast " + t.type}>
+              <span>{t.type === "toast-success" ? "✓" : t.type === "toast-error" ? "✕" : "●"}</span>
+              <span>{t.message}</span>
+            </div>
+          );
+        })}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Cormorant+Garamond:wght@400;500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -187,6 +219,13 @@ const CSS = `
   .light-mode .sidebar { background: #1A1814 !important; }
   .light-mode .recharts-cartesian-grid line { stroke: #E8E6DF !important; }
   .light-mode .recharts-text { fill: #6B6860 !important; }
+  .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .toast{padding:12px 18px;border-radius:10px;font-size:13px;font-family:"DM Sans",sans-serif;display:flex;align-items:center;gap:10px;pointer-events:all;animation:toast-in 0.3s ease;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+  @keyframes toast-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .toast-success{background:#1A2F1F;border:1px solid #5EBF7A40;color:#5EBF7A}
+  .toast-error{background:#2F1010;border:1px solid #E07A7A40;color:#E07A7A}
+  .toast-info{background:#1A1A2F;border:1px solid #8B7BAB40;color:#C9A96E}
+  .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9998}
   @media(max-width:768px){
     .app-layout{flex-direction:column}
     .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);width:260px}
@@ -308,12 +347,40 @@ export default function App() {
     }
   }, []);
 
-  // Vérifier périodiquement si la session a expiré (toutes les minutes)
+  // Refresh token avant expiration + vérification périodique
+  async function refreshSession(s) {
+    try {
+      const r = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": SB_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token }),
+      });
+      if (!r.ok) { handleLogout(); return; }
+      const newSession = await r.json();
+      if (newSession.access_token) {
+        setSession(newSession);
+        localStorage.setItem("rb_session", JSON.stringify(newSession));
+      } else { handleLogout(); }
+    } catch { handleLogout(); }
+  }
+
   useEffect(() => {
     if (!session) return;
     const interval = setInterval(() => {
       if (!isSessionValid(session)) {
-        handleLogout();
+        // Try to refresh before logging out
+        if (session.refresh_token) {
+          refreshSession(session);
+        } else {
+          handleLogout();
+        }
+      } else {
+        // Refresh proactively 5 minutes before expiry
+        const expiresAt = session.expires_at * 1000;
+        const fiveMin = 5 * 60 * 1000;
+        if (Date.now() > expiresAt - fiveMin && session.refresh_token) {
+          refreshSession(session);
+        }
       }
     }, 60000);
     return () => clearInterval(interval);
@@ -324,14 +391,18 @@ export default function App() {
 
   if (!session) return (
     <ThemeContext.Provider value={theme}>
-      <LoginPage onLogin={handleLogin} isDark={isDark} onToggleTheme={toggleTheme} />
+      <ToastProvider>
+        <LoginPage onLogin={handleLogin} isDark={isDark} onToggleTheme={toggleTheme} />
+      </ToastProvider>
     </ThemeContext.Provider>
   );
   return (
     <ThemeContext.Provider value={theme}>
-      {isAdmin
-        ? <AdminApp db={db} session={session} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />
-        : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />}
+      <ToastProvider>
+        {isAdmin
+          ? <AdminApp db={db} session={session} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />
+          : <ClientApp db={db} userId={session.user?.id} onLogout={handleLogout} isDark={isDark} onToggleTheme={toggleTheme} />}
+      </ToastProvider>
     </ThemeContext.Provider>
   );
 }
@@ -341,6 +412,7 @@ export default function App() {
 // ══════════════════════════════════════
 function BudgetSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [budgets, setBudgets] = useState([]);
   const [budgetType, setBudgetType] = useState("actuel");
   const [modal, setModal] = useState(null);
@@ -360,12 +432,12 @@ function BudgetSection({ db, clientId, isReadOnly }) {
       await db.post("budgets", { client_id: clientId, type: budgetType, categorie: modal.categorie, nom: form.nom, montant: parseFloat(form.montant) });
       await loadBudgets();
       setModal(null); setForm(EMPTY_BUDGET);
-    } catch (e) { alert("Erreur : " + e.message); }
+    } catch (e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
   async function delBudget(id) {
-    try { await db.del("budgets", id); await loadBudgets(); } catch (e) { alert("Erreur : " + e.message); }
+    try { await db.del("budgets", id); await loadBudgets(); } catch (e) { toast.error("Erreur : " + e.message); }
   }
 
   const b = budgets.filter(x => x.type === budgetType);
@@ -543,6 +615,7 @@ function BudgetSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 function BourseSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [actions, setActions] = useState([]);
   const [quotes, setQuotes] = useState({});
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -613,7 +686,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
       await loadActions();
       setModal(null); setEditAction(null);
       setForm({ ticker: "", nom: "", nombre: "", prix_achat: "", date_achat: new Date().toISOString().split("T")[0] });
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
@@ -625,7 +698,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
 
   async function delAction(id) {
     if (!window.confirm("Supprimer cette position ?")) return;
-    try { await db.del("actions", id); await loadActions(); } catch(e) { alert(e.message); }
+    try { await db.del("actions", id); await loadActions(); } catch(e) { toast.error(e.message); }
   }
 
   const totalInvesti = actions.reduce((s, a) => s + a.nombre * a.prix_achat, 0);
@@ -666,7 +739,6 @@ function BourseSection({ db, clientId, isReadOnly }) {
   );
 
   const pvColor = (pv) => pv >= 0 ? "#5EBF7A" : "#E07A7A";
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
   const fmtPct = n => `${n >= 0 ? "+" : ""}${parseFloat(n).toFixed(2)}%`;
 
   return (
@@ -813,6 +885,7 @@ function BourseSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 function IdentificationSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -840,7 +913,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
       }
       await loadData();
       setEditing(false);
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
@@ -1013,6 +1086,7 @@ function IdentificationSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 function DividendesSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [dividendes, setDividendes] = useState([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ entreprise: "", support: "", annee: new Date().getFullYear(), montant: "" });
@@ -1052,15 +1126,14 @@ function DividendesSection({ db, clientId, isReadOnly }) {
       await loadDividendes();
       setModal(false);
       setForm({ entreprise: "", support: "", annee: CURRENT_YEAR, montant: "" });
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
   async function delDividende(id) {
-    try { await db.del("dividendes", id); await loadDividendes(); } catch(e) { alert(e.message); }
+    try { await db.del("dividendes", id); await loadDividendes(); } catch(e) { toast.error(e.message); }
   }
 
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n || 0);
 
   // Totaux
   const totalGlobal = dividendes.reduce((s, d) => s + d.montant, 0);
@@ -1423,7 +1496,6 @@ function SimulateurSection({ patrimoineActuel }) {
   const [afficherSupp, setAfficherSupp] = useState(true);
 
   const p = (k, v) => setParams(prev => ({ ...prev, [k]: parseFloat(v) || 0 }));
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtK = n => {
     if (n >= 1000000) return `${(n/1000000).toFixed(2)}M€`;
     if (n >= 1000) return `${(n/1000).toFixed(0)}k€`;
@@ -1642,7 +1714,6 @@ function ImmoLocatifSection() {
     tmi: 30, regime: "reel",
   });
   const up = (k, v) => setP(prev => ({ ...prev, [k]: parseFloat(v) || 0 }));
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtPct = n => `${parseFloat(n).toFixed(2)}%`;
 
   const cout_total = p.prix_achat * (1 + p.frais_notaire_pct / 100) + p.travaux;
@@ -1779,7 +1850,6 @@ function LouerAcheterSection() {
     duree_simulation: 20,
   });
   const up = (k, v) => setP(prev => ({ ...prev, [k]: parseFloat(v) || 0 }));
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
 
   // Calcul achat
   const frais_notaire = p.prix_bien * (p.frais_notaire_pct / 100);
@@ -1950,7 +2020,6 @@ function ImpotsSection({ clientId }) {
   };
   // Helper to get numeric value (empty string = 0)
   const pv = (k) => parseFloat(p[k]) || 0;
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtPct = n => `${parseFloat(n).toFixed(1)}%`;
 
   // Barème 2025
@@ -2180,14 +2249,30 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
   ];
 
   // Timeline enrichie avec immo historique (utilise date_achat comme point de départ)
+  const today = new Date().getTime();
   const timelineAvecImmo = timeline.map(point => {
-    // Pour chaque point de la timeline, ajoute la valeur nette des biens
-    // acquis avant ou à cette date
+    const pointDate = new Date(point.rawDate).getTime();
     const immoAtDate = biensImmo.reduce((s, b) => {
-      if (!b.date_achat || b.date_achat <= point.rawDate) {
-        return s + ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * detImmo(b);
+      if (!b.date_achat || b.date_achat > point.rawDate) return s;
+      const det = detImmo(b);
+      const dateAchat = new Date(b.date_achat).getTime();
+      const valAchat = b.prix_achat || 0;
+      const valActuelle = b.valorisation_actuelle || b.prix_achat || 0;
+      // Interpolation lineaire entre prix_achat et valorisation_actuelle
+      const totalDuration = today - dateAchat;
+      const elapsed = pointDate - dateAchat;
+      const ratio = totalDuration > 0 ? Math.min(1, Math.max(0, elapsed / totalDuration)) : 1;
+      const valeurEstimee = valAchat + (valActuelle - valAchat) * ratio;
+      // Dette : on suppose remboursement lineaire sur la duree du credit
+      let detteEstimee = b.capital_restant_du || 0;
+      if (b.date_fin_credit && b.capital_restant_du > 0) {
+        const dateFin = new Date(b.date_fin_credit).getTime();
+        const dureeTotale = dateFin - dateAchat;
+        const dureeRestante = dateFin - pointDate;
+        const ratioRestant = dureeTotale > 0 ? Math.min(1, Math.max(0, dureeRestante / dureeTotale)) : 0;
+        detteEstimee = b.capital_restant_du * ratioRestant;
       }
-      return s;
+      return s + (valeurEstimee - detteEstimee) * det;
     }, 0);
     return { ...point, total: point.total + immoAtDate };
   });
@@ -2376,6 +2461,7 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
 // ══════════════════════════════════════
 function RevenusSection({ db, clientId, color, fmt }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [revenus, setRevenus] = useState([]);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ categorie: "", annee: new Date().getFullYear(), montant: "" });
@@ -2401,12 +2487,12 @@ function RevenusSection({ db, clientId, color, fmt }) {
       await load();
       setModal(false);
       setForm({ categorie: "", annee: CURRENT_YEAR, montant: "" });
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
   async function del(id) {
-    try { await db.del("revenus", id); await load(); } catch(e) { alert(e.message); }
+    try { await db.del("revenus", id); await load(); } catch(e) { toast.error(e.message); }
   }
 
   // Années distinctes
@@ -2666,12 +2752,12 @@ function ImmobilierSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [biens, setBiens] = useState([]);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const TYPES = ["Résidence principale", "Résidence secondaire", "Locatif", "Terrain", "Parking", "Autre"];
-  const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
   const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR") : "--";
 
   useEffect(() => { if (clientId) loadBiens(); }, [clientId]);
@@ -2705,13 +2791,13 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
       }
       await loadBiens();
       setModal(null);
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
   async function delBien(id) {
     if (!window.confirm("Supprimer ce bien ?")) return;
-    try { await db.del("biens_immobiliers", id); await loadBiens(); } catch(e) { alert(e.message); }
+    try { await db.del("biens_immobiliers", id); await loadBiens(); } catch(e) { toast.error(e.message); }
   }
 
   const totalPatrimoine = biens.reduce((s, b) => s + (b.valorisation_actuelle || b.prix_achat || 0), 0);
@@ -2894,6 +2980,7 @@ function BiensImmobiliersSection({ db, clientId, isReadOnly }) {
 // ══════════════════════════════════════
 function NotesSection({ db, clientId, auteur, color }) {
   const theme = useTheme(); const isDark = theme.isDark;
+  const toast = useToast();
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -2917,13 +3004,13 @@ function NotesSection({ db, clientId, auteur, color }) {
       await db.post("notes", { client_id: clientId, texte: newNote, auteur });
       setNewNote("");
       await loadNotes();
-    } catch(e) { alert("Erreur : " + e.message); }
+    } catch(e) { toast.error("Erreur : " + e.message); }
     setSaving(false);
   }
 
   async function delNote(id) {
     if (auteur !== "admin") return; // seul l'admin peut supprimer
-    try { await db.del("notes", id); await loadNotes(); } catch(e) { alert(e.message); }
+    try { await db.del("notes", id); await loadNotes(); } catch(e) { toast.error(e.message); }
   }
 
   const fmtDate = d => d ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "--";
@@ -3001,7 +3088,6 @@ function AssistantIA({ clientData }) {
 
   function buildSystemPrompt() {
     const c = clientData;
-    const fmtE = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
     const ident = c.identification || {};
 
     const patrimoineFinancier = (c.produits || []).reduce((s, p) => {
@@ -3020,17 +3106,17 @@ function AssistantIA({ clientData }) {
 
     const produitsStr = (c.produits || []).map(p => {
       const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      return "- " + p.nom + " (" + p.categorie + ") : " + (last ? fmtE(last.montant) : "N/A");
+      return "- " + p.nom + " (" + p.categorie + ") : " + (last ? fmt(last.montant) : "N/A");
     }).join("\n") || "Aucun produit renseigné";
 
     const objectifsStr = (c.objectifs || []).map(o =>
-      "- " + o.nom + " : cible " + fmtE(o.montant_cible) + (o.description ? " -- " + o.description : "")
+      "- " + o.nom + " : cible " + fmt(o.montant_cible) + (o.description ? " -- " + o.description : "")
     ).join("\n") || "Aucun objectif défini";
 
     const biensStr = (c.biens || []).map(b => {
       const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
       const net = ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * det;
-      return "- " + b.nom + " (" + b.type_bien + ") : valeur " + fmtE(b.valorisation_actuelle || b.prix_achat) + ", dette " + fmtE(b.capital_restant_du || 0) + ", net perso " + fmtE(net);
+      return "- " + b.nom + " (" + b.type_bien + ") : valeur " + fmt(b.valorisation_actuelle || b.prix_achat) + ", dette " + fmt(b.capital_restant_du || 0) + ", net perso " + fmt(net);
     }).join("\n") || "Aucun bien immobilier";
 
     const actionsStr = (c.actions || []).map(a =>
@@ -3038,7 +3124,7 @@ function AssistantIA({ clientData }) {
     ).join("\n") || "Aucune position";
 
     const dividendesStr = (c.dividendes || []).slice(0, 10).map(d =>
-      "- " + d.entreprise + " (" + d.support + ") : " + fmtE(d.montant) + " en " + d.annee
+      "- " + d.entreprise + " (" + d.support + ") : " + fmt(d.montant) + " en " + d.annee
     ).join("\n") || "Aucun dividende";
 
     const age = ident.date_naissance ? (new Date().getFullYear() - new Date(ident.date_naissance).getFullYear()) + " ans" : "";
@@ -3062,10 +3148,10 @@ function AssistantIA({ clientData }) {
       ident.objectif_global ? "Objectif global : " + ident.objectif_global : "",
       "",
       "PATRIMOINE",
-      "Patrimoine financier : " + fmtE(patrimoineFinancier),
-      "Immobilier net perso : " + fmtE(immoNet),
-      "Patrimoine global : " + fmtE(patrimoineFinancier + immoNet),
-      "Patrimoine cible : " + fmtE(c.client?.patrimoine_cible),
+      "Patrimoine financier : " + fmt(patrimoineFinancier),
+      "Immobilier net perso : " + fmt(immoNet),
+      "Patrimoine global : " + fmt(patrimoineFinancier + immoNet),
+      "Patrimoine cible : " + fmt(c.client?.patrimoine_cible),
       "",
       "Produits financiers :",
       produitsStr,
@@ -3077,10 +3163,10 @@ function AssistantIA({ clientData }) {
       objectifsStr,
       "",
       "BUDGET MENSUEL",
-      "Revenus : " + fmtE(totalRevenus),
-      "Depenses : " + fmtE(totalDepenses),
-      "Virements epargne : " + fmtE(totalVirements),
-      "Epargne disponible : " + fmtE(totalRevenus - totalDepenses - totalVirements),
+      "Revenus : " + fmt(totalRevenus),
+      "Depenses : " + fmt(totalDepenses),
+      "Virements epargne : " + fmt(totalVirements),
+      "Epargne disponible : " + fmt(totalRevenus - totalDepenses - totalVirements),
       "",
       "PORTEFEUILLE BOURSIER",
       actionsStr,
@@ -3762,7 +3848,12 @@ function InformationsSection() {
 // ══════════════════════════════════════
 function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   const theme = useTheme();
+  const toast = useToast();
   const [clients, setClients] = useState([]);
+  const [confirmState, setConfirmState] = useState(null);
+  function showConfirm(message) {
+    return new Promise(resolve => setConfirmState({ message, resolve }));
+  }
   const [activeClient, setActiveClient] = useState(null);
   const [produits, setProduits] = useState([]);
   const [avoirs, setAvoirs] = useState([]);
@@ -3839,13 +3930,13 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
         await loadClientData(activeClient.id);
       }
       setModal(null);
-    } catch(e){ alert("Erreur : "+e.message); }
+    } catch(e){ toast.error("Erreur : "+e.message); }
     setSaving(false);
   }
 
-  async function delClient() { if(!window.confirm(`Supprimer ${activeClient.nom} ?`))return; await db.del("clients",activeClient.id); setActiveClient(null); await loadAll(); setPage("global"); }
-  async function delProduit(id) { if(!window.confirm("Supprimer ce produit ?"))return; await db.del("produits",id); await loadClientData(activeClient.id); }
-  async function delObjectif(id) { if(!window.confirm("Supprimer cet objectif ?"))return; await db.del("objectifs",id); await loadClientData(activeClient.id); }
+  async function delClient() { const ok = await showConfirm(`Supprimer définitivement ${activeClient.nom} ?`); if(!ok)return; await db.del("clients",activeClient.id); setActiveClient(null); await loadAll(); setPage("global"); }
+  async function delProduit(id) { const ok = await showConfirm("Supprimer ce produit ?"); if(!ok)return; await db.del("produits",id); await loadClientData(activeClient.id); }
+  async function delObjectif(id) { const ok = await showConfirm("Supprimer cet objectif ?"); if(!ok)return; await db.del("objectifs",id); await loadClientData(activeClient.id); }
   async function delJalon(id) { await db.del("jalons",id); await loadClientData(activeClient.id); }
 
   function openModal(type,extra={}) {
@@ -4004,26 +4095,6 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                     isAdmin={true} db={db} clientId={activeClient?.id}
                   />
                 )}
-                {tab==="synthese_OLD"&&(
-                  <div>
-                    <div className="grid-3" style={{marginBottom:20}}>
-                      {[
-                        {label:"Patrimoine total",val:fmt(patrimoineActuel)},
-                        {label:"Patrimoine cible",val:fmt(activeClient.patrimoine_cible)},
-                        {label:"Nb produits",val:produits.length},
-                      ].map((k,i)=>(
-                        <div key={i} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:10,padding:"14px 16px"}}>
-                          <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:5}}>{k.label}</div>
-                          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24}}>{k.val}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid-split" style={{marginBottom:16}}>
-                      <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
-                        <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
-                        {parCategorie.length>0?<>
-                          <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
-                          {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:theme.text3}}>{c.name}</span></div><span style={{fontSize:11,color:theme.text5}}>{fmt(c.value)}</span></div>)}
                         </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
                       </div>
                       <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
@@ -4179,6 +4250,24 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
         })()}
       </div>
 
+      {/* Confirm dialog */}
+      {confirmState && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9998}}>
+          <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:14,padding:28,width:340,fontFamily:"'DM Sans',sans-serif"}}>
+            <div style={{fontSize:14,color:theme.text,marginBottom:24,lineHeight:1.6}}>{confirmState.message}</div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>{confirmState.resolve(false);setConfirmState(null);}}
+                style={{padding:"9px 20px",background:"none",border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:13,fontFamily:"inherit"}}>
+                Annuler
+              </button>
+              <button onClick={()=>{confirmState.resolve(true);setConfirmState(null);}}
+                style={{padding:"9px 20px",background:"#E07A7A",border:"none",borderRadius:8,cursor:"pointer",color:"#fff",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* MODALS */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
@@ -4250,7 +4339,12 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
 // ══════════════════════════════════════
 function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const theme = useTheme();
+  const toast = useToast();
   const [client, setClient] = useState(null);
+  const [confirmState, setConfirmState] = useState(null);
+  function showConfirm(message) {
+    return new Promise(resolve => setConfirmState({ message, resolve }));
+  }
   const [produits, setProduits] = useState([]);
   const [avoirs, setAvoirs] = useState([]);
   const [objectifs, setObjectifs] = useState([]);
@@ -4319,12 +4413,12 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
         for (const pid of already.filter(id=>!modal.selectedProduits.includes(id))) { const op=objProduits.find(x=>x.objectif_id===modal.objectif_id&&x.produit_id===pid); if(op) await db.del("objectif_produits",op.id); }
       }
       await reload(); setModal(null);
-    } catch(e){alert("Erreur : "+e.message);}
+    } catch(e){toast.error("Erreur : "+e.message);}
     setSaving(false);
   }
 
-  async function delProduit(id) { if(!window.confirm("Supprimer ?"))return; await db.del("produits",id); reload(); }
-  async function delObjectif(id) { if(!window.confirm("Supprimer ?"))return; await db.del("objectifs",id); reload(); }
+  async function delProduit(id) { const ok = await showConfirm("Supprimer ce produit ?"); if(!ok)return; await db.del("produits",id); reload(); }
+  async function delObjectif(id) { const ok = await showConfirm("Supprimer cet objectif ?"); if(!ok)return; await db.del("objectifs",id); reload(); }
   async function delJalon(id) { await db.del("jalons",id); reload(); }
 
   function openModal(type,extra={}) {
@@ -4402,22 +4496,6 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             isAdmin={false} db={db} clientId={client?.id}
           />
         )}
-        {tab==="synthese_OLD"&&(
-          <div>
-            <div className="grid-2" style={{marginBottom:20}}>
-              {[{label:"Patrimoine total",val:fmt(patrimoineTotal)},{label:"Patrimoine cible",val:fmt(client.patrimoine_cible)}].map((k,i)=>(
-                <div key={i} style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:"18px 20px"}}>
-                  <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:6}}>{k.label}</div>
-                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28}}>{k.val}</div>
-                </div>
-              ))}
-            </div>
-            <div className="grid-split">
-              <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
-                <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em",marginBottom:14}}>Répartition</div>
-                {parCategorie.length>0?<>
-                  <ResponsiveContainer width="100%" height={140}><PieChart><Pie data={parCategorie} dataKey="value" innerRadius={40} outerRadius={62} paddingAngle={3}>{parCategorie.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:isDark?"#1A1A1E":"#FFFFFF",border:isDark?"none":"1px solid #E0DDD6",borderRadius:6,fontSize:11,color:isDark?"#E2DDD6":"#1A1814"}}/></PieChart></ResponsiveContainer>
-                  {parCategorie.map((c,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:6,height:6,borderRadius:"50%",background:c.color}}/><span style={{fontSize:11,color:theme.text3}}>{c.name}</span></div><span style={{fontSize:11,color:theme.text5}}>{fmt(c.value)}</span></div>)}
                 </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
               </div>
               <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
@@ -4565,6 +4643,23 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
         }} />}
       </div>
 
+      {confirmState && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9998}}>
+          <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:14,padding:28,width:340,fontFamily:"'DM Sans',sans-serif"}}>
+            <div style={{fontSize:14,color:theme.text,marginBottom:24,lineHeight:1.6}}>{confirmState.message}</div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>{confirmState.resolve(false);setConfirmState(null);}}
+                style={{padding:"9px 20px",background:"none",border:`1px solid ${theme.border}`,borderRadius:8,cursor:"pointer",color:theme.text3,fontSize:13,fontFamily:"inherit"}}>
+                Annuler
+              </button>
+              <button onClick={()=>{confirmState.resolve(true);setConfirmState(null);}}
+                style={{padding:"9px 20px",background:"#E07A7A",border:"none",borderRadius:8,cursor:"pointer",color:"#fff",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* MODALS CLIENT */}
       {modal&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}}>
