@@ -4095,8 +4095,6 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                     isAdmin={true} db={db} clientId={activeClient?.id}
                   />
                 )}
-                        </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
-                      </div>
                       <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                           <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Produits</div>
@@ -4496,8 +4494,6 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             isAdmin={false} db={db} clientId={client?.id}
           />
         )}
-                </>:<div style={{color:theme.text5,fontSize:12,textAlign:"center",paddingTop:20}}>Aucun produit</div>}
-              </div>
               <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                   <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Mes produits</div>
