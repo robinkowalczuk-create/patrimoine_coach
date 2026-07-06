@@ -4095,31 +4095,6 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
                     isAdmin={true} db={db} clientId={activeClient?.id}
                   />
                 )}
-                      <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                          <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Produits</div>
-                          <button className="btn" onClick={()=>openModal("produit_new")} style={{padding:"5px 12px",background:color,border:"none",borderRadius:6,cursor:"pointer",color:"#0C0C0E",fontSize:10,fontWeight:600}}>+ Ajouter</button>
-                        </div>
-                        {produits.length===0&&<div style={{color:theme.text5,fontSize:12}}>Aucun produit</div>}
-                        {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
-                          <div key={cat} style={{marginBottom:10}}>
-                            <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:5}}>{cat}</div>
-                            {prods.map(p=>{const last=avoirs.filter(a=>a.produit_id===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];return(
-                              <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:theme.inputBg,borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
-                                <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:theme.text2}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:theme.text4}}>· {fmtDate(last.date)}</span>}</div>
-                                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                                  <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
-                                  <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
-                                  <button onClick={()=>delProduit(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#E07A7A",fontSize:11}}>✕</button>
-                                </div>
-                              </div>
-                            );})}
-                          </div>
-                        );})}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {tab==="objectifs"&&(
                   <div>
@@ -4493,30 +4468,6 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
             onDelProduit={delProduit}
             isAdmin={false} db={db} clientId={client?.id}
           />
-        )}
-              <div style={{background:theme.bg2,border:`1px solid ${theme.border}`,borderRadius:12,padding:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                  <div style={{fontSize:9,color:theme.text5,textTransform:"uppercase",letterSpacing:"0.15em"}}>Mes produits</div>
-                  <button className="btn" onClick={()=>openModal("produit_new")} style={{padding:"5px 12px",background:color,border:"none",borderRadius:6,cursor:"pointer",color:"#0C0C0E",fontSize:10,fontWeight:600}}>+ Ajouter</button>
-                </div>
-                {CATEGORIES.map(cat=>{const prods=produits.filter(p=>p.categorie===cat);if(!prods.length)return null;return(
-                  <div key={cat} style={{marginBottom:10}}>
-                    <div style={{fontSize:9,color:CAT_COLORS[cat],textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:5}}>{cat}</div>
-                    {prods.map(p=>{const last=avoirs.filter(a=>a.produit_id===p.id).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];return(
-                      <div key={p.id} className="row" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:theme.inputBg,borderRadius:8,marginBottom:3,transition:"background 0.15s"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7}}><div style={{width:6,height:6,borderRadius:"50%",background:CAT_COLORS[cat]}}/><span style={{fontSize:12,color:theme.text2}}>{p.nom}</span>{last&&<span style={{fontSize:10,color:theme.text4}}>· {fmtDate(last.date)}</span>}</div>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontSize:13,fontWeight:500}}>{last?fmt(last.montant):"--"}</span>
-                          <button onClick={()=>openModal("avoir_new",{produit_id:p.id,produit_nom:p.nom})} style={{padding:"3px 8px",background:`${color}20`,border:`1px solid ${color}40`,borderRadius:5,cursor:"pointer",color,fontSize:10}}>+ Avoir</button>
-                          <button onClick={()=>delProduit(p.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#E07A7A",fontSize:11}}>✕</button>
-                        </div>
-                      </div>
-                    );})}
-                  </div>
-                );})}
-              </div>
-            </div>
-          </div>
         )}
 
         {tab==="objectifs"&&(
