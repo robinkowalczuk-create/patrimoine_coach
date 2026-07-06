@@ -3021,30 +3021,25 @@ function AssistantIA({ clientData }) {
     const produitsStr = (c.produits || []).map(p => {
       const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       return "- " + p.nom + " (" + p.categorie + ") : " + (last ? fmtE(last.montant) : "N/A");
-    }).join("
-") || "Aucun produit renseigné";
+    }).join("\n") || "Aucun produit renseigné";
 
     const objectifsStr = (c.objectifs || []).map(o =>
       "- " + o.nom + " : cible " + fmtE(o.montant_cible) + (o.description ? " -- " + o.description : "")
-    ).join("
-") || "Aucun objectif défini";
+    ).join("\n") || "Aucun objectif défini";
 
     const biensStr = (c.biens || []).map(b => {
       const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
       const net = ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * det;
       return "- " + b.nom + " (" + b.type_bien + ") : valeur " + fmtE(b.valorisation_actuelle || b.prix_achat) + ", dette " + fmtE(b.capital_restant_du || 0) + ", net perso " + fmtE(net);
-    }).join("
-") || "Aucun bien immobilier";
+    }).join("\n") || "Aucun bien immobilier";
 
     const actionsStr = (c.actions || []).map(a =>
       "- " + (a.nom || a.ticker) + " (" + a.ticker + ") : " + a.nombre + " titres @ " + a.prix_achat + "EUR"
-    ).join("
-") || "Aucune position";
+    ).join("\n") || "Aucune position";
 
     const dividendesStr = (c.dividendes || []).slice(0, 10).map(d =>
       "- " + d.entreprise + " (" + d.support + ") : " + fmtE(d.montant) + " en " + d.annee
-    ).join("
-") || "Aucun dividende";
+    ).join("\n") || "Aucun dividende";
 
     const age = ident.date_naissance ? (new Date().getFullYear() - new Date(ident.date_naissance).getFullYear()) + " ans" : "";
 
@@ -3094,8 +3089,7 @@ function AssistantIA({ clientData }) {
       dividendesStr,
       "",
       "Statut client : " + (c.client?.statut || "N/A"),
-    ].filter(Boolean).join("
-");
+    ].filter(Boolean).join("\n");
   }
 
     async function sendMessage(text) {
