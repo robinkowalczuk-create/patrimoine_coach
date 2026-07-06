@@ -87,9 +87,9 @@ const EMPTY_OBJECTIF = { nom: "", montant_cible: "", description: "" };
 const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
-const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes","informations"];
+const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes","informations","assistant"];
 const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" };
-const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes", informations:"Informations" };
+const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes", informations:"Informations", assistant:"✦ Assistant IA" };
 
 function getAge(dateNaissance) {
   if (!dateNaissance) return null;
@@ -2975,6 +2975,276 @@ function NotesSection({ db, clientId, auteur, color }) {
   );
 }
 
+
+// ══════════════════════════════════════
+//  ASSISTANT IA
+// ══════════════════════════════════════
+function AssistantIA({ clientData }) {
+  const theme = useTheme(); const isDark = theme.isDark;
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = React.useRef(null);
+
+  const SUGGESTIONS = [
+    "Quelle est ma situation patrimoniale actuelle ?",
+    "Comment optimiser mon budget mensuel ?",
+    "Suis-je en bonne voie pour atteindre mes objectifs ?",
+    "Quels placements me recommandes-tu selon mon profil ?",
+    "Comment réduire mes impôts cette année ?",
+    "Analyse l'évolution de mon patrimoine",
+  ];
+
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  function buildSystemPrompt() {
+    const c = clientData;
+    const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
+
+    const patrimoineFinancier = (c.produits || []).reduce((s, p) => {
+      const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      return s + (last?.montant || 0);
+    }, 0);
+
+    const immoNet = (c.biens || []).reduce((s, b) => {
+      const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
+      return s + ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * det;
+    }, 0);
+
+    const totalRevenus = (c.budgets || []).filter(b => b.categorie === "revenu" && b.type === "actuel").reduce((s, b) => s + b.montant, 0);
+    const totalDepenses = (c.budgets || []).filter(b => (b.categorie === "depense_fixe" || b.categorie === "depense_variable") && b.type === "actuel").reduce((s, b) => s + b.montant, 0);
+    const totalVirements = (c.budgets || []).filter(b => b.categorie === "virement" && b.type === "actuel").reduce((s, b) => s + b.montant, 0);
+
+    const produitsStr = (c.produits || []).map(p => {
+      const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      return `- ${p.nom} (${p.categorie}) : ${last ? fmt(last.montant) : "N/A"}`;
+    }).join("\n");
+
+    const objectifsStr = (c.objectifs || []).map(o => {
+      return `- ${o.nom} : cible ${fmt(o.montant_cible)}${o.description ? " -- " + o.description : ""}`;
+    }).join("\n");
+
+    const biensStr = (c.biens || []).map(b => {
+      const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
+      const net = ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * det;
+      return `- ${b.nom} (${b.type_bien}) : valeur ${fmt(b.valorisation_actuelle || b.prix_achat)}, dette ${fmt(b.capital_restant_du || 0)}, net perso ${fmt(net)}`;
+    }).join("\n");
+
+    const actionsStr = (c.actions || []).map(a => `- ${a.nom || a.ticker} (${a.ticker}) : ${a.nombre} titres @ ${a.prix_achat}€`).join("\n");
+
+    const dividendesStr = (c.dividendes || []).slice(0, 10).map(d => `- ${d.entreprise} (${d.support}) : ${fmt(d.montant)} en ${d.annee}`).join("\n");
+
+    const ident = c.identification || {};
+
+    return `Tu es un assistant patrimonial expert, intégré dans l'application Rob'Invest. Tu aides le client à comprendre sa situation financière, à optimiser son patrimoine et à prendre de meilleures décisions d'investissement.
+
+Tu as accès aux données complètes et actualisées du client. Réponds en français, de façon claire, précise et bienveillante. Donne des conseils concrets et personnalisés basés sur les données réelles. Utilise des chiffres précis quand tu y fais référence.
+
+⚠️ IMPORTANT : Tu n'es pas un conseiller en investissement agréé. Tes réponses sont éducatives et indicatives. Pour des décisions importantes, recommande de consulter un professionnel.
+
+═══════════════════════════════════
+PROFIL DU CLIENT
+═══════════════════════════════════
+Nom : ${c.client?.nom || "N/A"}
+${ident.date_naissance ? `Âge : ${new Date().getFullYear() - new Date(ident.date_naissance).getFullYear()} ans` : ""}
+${ident.profession ? `Profession : ${ident.profession}` : ""}
+${ident.situation_personnelle ? `Situation : ${ident.situation_personnelle}` : ""}
+${ident.profil_risque ? `Profil de risque : ${ident.profil_risque}` : ""}
+${ident.horizon_investissement ? `Horizon : ${ident.horizon_investissement}` : ""}
+${ident.objectif_global ? `Objectif global : ${ident.objectif_global}` : ""}
+
+═══════════════════════════════════
+PATRIMOINE
+═══════════════════════════════════
+Patrimoine financier : ${fmt(patrimoineFinancier)}
+Immobilier net (perso) : ${fmt(immoNet)}
+Patrimoine global consolidé : ${fmt(patrimoineFinancier + immoNet)}
+Patrimoine cible : ${fmt(c.client?.patrimoine_cible)}
+
+Produits financiers :
+${produitsStr || "Aucun produit renseigné"}
+
+Biens immobiliers :
+${biensStr || "Aucun bien immobilier"}
+
+═══════════════════════════════════
+OBJECTIFS
+═══════════════════════════════════
+${objectifsStr || "Aucun objectif défini"}
+
+═══════════════════════════════════
+BUDGET MENSUEL
+═══════════════════════════════════
+Revenus mensuels : ${fmt(totalRevenus)}
+Dépenses : ${fmt(totalDepenses)}
+Virements épargne : ${fmt(totalVirements)}
+Épargne disponible : ${fmt(totalRevenus - totalDepenses - totalVirements)}
+
+═══════════════════════════════════
+PORTEFEUILLE BOURSIER
+═══════════════════════════════════
+${actionsStr || "Aucune position"}
+
+═══════════════════════════════════
+DIVIDENDES (derniers enregistrés)
+═══════════════════════════════════
+${dividendesStr || "Aucun dividende"}
+
+Statut client : ${c.client?.statut || "N/A"}
+Date de début de suivi : ${c.client?.date_debut || "N/A"}`;
+  }
+
+  async function sendMessage(text) {
+    const userMsg = text || input.trim();
+    if (!userMsg) return;
+    setInput("");
+    setLoading(true);
+
+    const newMessages = [...messages, { role: "user", content: userMsg }];
+    setMessages(newMessages);
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: buildSystemPrompt(),
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || "Je n'ai pas pu générer de réponse.";
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: "assistant", content: "Erreur de connexion à l'assistant. Veuillez réessayer." }]);
+    }
+    setLoading(false);
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", maxWidth: 800, margin: "0 auto" }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, marginBottom: 4 }}>✦ Assistant patrimonial IA</div>
+        <div style={{ fontSize: 12, color: theme.text4 }}>
+          Propulsé par Claude · Accès complet aux données de {clientData.client?.nom || "votre compte"}
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14, paddingBottom: 16 }}>
+
+        {/* Welcome message */}
+        {messages.length === 0 && (
+          <div>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 16, borderBottomLeftRadius: 4, padding: "16px 20px", maxWidth: "85%" }}>
+              <div style={{ fontSize: 12, color: theme.gold, marginBottom: 8, fontWeight: 600 }}>✦ Assistant Rob'Invest</div>
+              <div style={{ fontSize: 13, color: theme.text, lineHeight: 1.7 }}>
+                Bonjour {clientData.client?.nom?.split(" ")[0] || ""} ! Je suis votre assistant patrimonial. J'ai accès à l'ensemble de vos données financières et je suis là pour vous aider à mieux comprendre votre situation et optimiser vos décisions.
+              </div>
+              <div style={{ fontSize: 11, color: theme.text4, marginTop: 8, fontStyle: "italic" }}>
+                ⚠️ Mes réponses sont éducatives et ne constituent pas un conseil en investissement.
+              </div>
+            </div>
+
+            {/* Suggestions */}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 10, color: theme.text5, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>Questions fréquentes</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {SUGGESTIONS.map((s, i) => (
+                  <button key={i} onClick={() => sendMessage(s)}
+                    style={{ padding: "8px 14px", background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 20, cursor: "pointer", color: theme.text3, fontSize: 12, fontFamily: "inherit", textAlign: "left", transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.target.style.borderColor = theme.gold; e.target.style.color = theme.gold; }}
+                    onMouseLeave={e => { e.target.style.borderColor = theme.border; e.target.style.color = theme.text3; }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        {messages.map((m, i) => {
+          const isUser = m.role === "user";
+          return (
+            <div key={i} style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start" }}>
+              <div style={{
+                maxWidth: "85%",
+                padding: "12px 16px",
+                borderRadius: 16,
+                borderBottomRightRadius: isUser ? 4 : 16,
+                borderBottomLeftRadius: isUser ? 16 : 4,
+                background: isUser ? theme.gold : theme.bg2,
+                border: isUser ? "none" : `1px solid ${theme.border}`,
+                color: isUser ? "#0C0C0E" : theme.text,
+                fontSize: 13,
+                lineHeight: 1.7,
+                whiteSpace: "pre-wrap",
+              }}>
+                {!isUser && <div style={{ fontSize: 11, color: theme.gold, marginBottom: 6, fontWeight: 600 }}>✦ Assistant</div>}
+                {m.content}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Loading */}
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+            <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 16, borderBottomLeftRadius: 4, padding: "12px 18px" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <div style={{ fontSize: 11, color: theme.gold }}>✦ Assistant réfléchit</div>
+                {[0,1,2].map(i => (
+                  <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: theme.gold, opacity: 0.5, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ background: theme.bg2, border: `1px solid ${theme.border}`, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 10, alignItems: "flex-end" }}>
+        <textarea
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder="Posez votre question... (Entrée pour envoyer)"
+          rows={1}
+          style={{ flex: 1, background: "none", border: "none", color: theme.text, fontSize: 13, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6, maxHeight: 120, overflowY: "auto" }}
+          onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+        />
+        <button onClick={() => sendMessage()}
+          disabled={loading || !input.trim()}
+          style={{ padding: "8px 18px", background: loading || !input.trim() ? theme.border : theme.gold, border: "none", borderRadius: 8, cursor: loading || !input.trim() ? "not-allowed" : "pointer", color: "#0C0C0E", fontSize: 12, fontWeight: 600, fontFamily: "inherit", flexShrink: 0, transition: "background 0.2s" }}>
+          Envoyer
+        </button>
+      </div>
+
+      {/* Reset */}
+      {messages.length > 0 && (
+        <button onClick={() => setMessages([])}
+          style={{ marginTop: 8, background: "none", border: "none", cursor: "pointer", color: theme.text5, fontSize: 11, fontFamily: "inherit", textAlign: "center" }}>
+          Effacer la conversation
+        </button>
+      )}
+
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }`}</style>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════
 //  INFORMATIONS SECTION
 // ══════════════════════════════════════
@@ -3901,6 +4171,12 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
 
                 {tab==="notes"&&<NotesSection db={db} clientId={activeClient.id} auteur="admin" color={color}/>}
                 {tab==="informations"&&<InformationsSection/>}
+                {tab==="assistant"&&<AssistantIA clientData={{
+                  client: activeClient,
+                  identification: identifications[activeClient?.id] || {},
+                  produits, avoirs, objectifs, biens,
+                  budgets: adminBudgets, actions: adminActions, dividendes: adminDividendes,
+                }} />}
               </div>
             </>
           );
@@ -4285,6 +4561,12 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
         {tab==="identification"&&<IdentificationSection db={db} clientId={client.id} isReadOnly={false}/>}
         {tab==="notes"&&<NotesSection db={db} clientId={client.id} auteur="client" color={color}/>}
         {tab==="informations"&&<InformationsSection/>}
+        {tab==="assistant"&&<AssistantIA clientData={{
+          client,
+          identification: {},
+          produits, avoirs, objectifs, biens,
+          budgets: clientBudgets, actions: clientActions, dividendes: clientDividendes,
+        }} />}
       </div>
 
       {/* MODALS CLIENT */}
