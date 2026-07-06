@@ -88,7 +88,7 @@ const EMPTY_JALON = { nom: "", montant_cible: "", produit_lie: "", moyens: "" };
 const EMPTY_BUDGET = { nom: "", montant: "" };
 
 const ALL_TABS = ["identification","synthese","objectifs","immobilier","impots","bourse","dividendes","budget","simulateur","notes","informations","assistant"];
-const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" };
+const TAB_LABELS = { identification:"Identification", synthese:"Synthèse", objectifs:"Objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Bourse", dividendes:"Dividendes", budget:"Budget", notes:"Notes", informations:"Informations" , assistant:"✦ Assistant IA" };
 const CLIENT_TAB_LABELS = { identification:"Mon profil", synthese:"Mon patrimoine", objectifs:"Mes objectifs", simulateur:"Simulateur", immobilier:"Immobilier", impots:"Impôts", bourse:"Ma bourse", dividendes:"Mes dividendes", budget:"Mon budget", notes:"Notes", informations:"Informations", assistant:"✦ Assistant IA" };
 
 function getAge(dateNaissance) {
@@ -3001,7 +3001,8 @@ function AssistantIA({ clientData }) {
 
   function buildSystemPrompt() {
     const c = clientData;
-    const fmt = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
+    const fmtE = n => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n || 0);
+    const ident = c.identification || {};
 
     const patrimoineFinancier = (c.produits || []).reduce((s, p) => {
       const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
@@ -3019,84 +3020,85 @@ function AssistantIA({ clientData }) {
 
     const produitsStr = (c.produits || []).map(p => {
       const last = (c.avoirs || []).filter(a => a.produit_id === p.id).sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-      return `- ${p.nom} (${p.categorie}) : ${last ? fmt(last.montant) : "N/A"}`;
-    }).join("\n");
+      return "- " + p.nom + " (" + p.categorie + ") : " + (last ? fmtE(last.montant) : "N/A");
+    }).join("
+") || "Aucun produit renseigné";
 
-    const objectifsStr = (c.objectifs || []).map(o => {
-      return `- ${o.nom} : cible ${fmt(o.montant_cible)}${o.description ? " -- " + o.description : ""}`;
-    }).join("\n");
+    const objectifsStr = (c.objectifs || []).map(o =>
+      "- " + o.nom + " : cible " + fmtE(o.montant_cible) + (o.description ? " -- " + o.description : "")
+    ).join("
+") || "Aucun objectif défini";
 
     const biensStr = (c.biens || []).map(b => {
       const det = (b.pct_detention != null ? b.pct_detention : 100) / 100;
       const net = ((b.valorisation_actuelle || b.prix_achat || 0) - (b.capital_restant_du || 0)) * det;
-      return `- ${b.nom} (${b.type_bien}) : valeur ${fmt(b.valorisation_actuelle || b.prix_achat)}, dette ${fmt(b.capital_restant_du || 0)}, net perso ${fmt(net)}`;
-    }).join("\n");
+      return "- " + b.nom + " (" + b.type_bien + ") : valeur " + fmtE(b.valorisation_actuelle || b.prix_achat) + ", dette " + fmtE(b.capital_restant_du || 0) + ", net perso " + fmtE(net);
+    }).join("
+") || "Aucun bien immobilier";
 
-    const actionsStr = (c.actions || []).map(a => `- ${a.nom || a.ticker} (${a.ticker}) : ${a.nombre} titres @ ${a.prix_achat}€`).join("\n");
+    const actionsStr = (c.actions || []).map(a =>
+      "- " + (a.nom || a.ticker) + " (" + a.ticker + ") : " + a.nombre + " titres @ " + a.prix_achat + "EUR"
+    ).join("
+") || "Aucune position";
 
-    const dividendesStr = (c.dividendes || []).slice(0, 10).map(d => `- ${d.entreprise} (${d.support}) : ${fmt(d.montant)} en ${d.annee}`).join("\n");
+    const dividendesStr = (c.dividendes || []).slice(0, 10).map(d =>
+      "- " + d.entreprise + " (" + d.support + ") : " + fmtE(d.montant) + " en " + d.annee
+    ).join("
+") || "Aucun dividende";
 
-    const ident = c.identification || {};
+    const age = ident.date_naissance ? (new Date().getFullYear() - new Date(ident.date_naissance).getFullYear()) + " ans" : "";
 
-    return `Tu es un assistant patrimonial expert, intégré dans l'application Rob'Invest. Tu aides le client à comprendre sa situation financière, à optimiser son patrimoine et à prendre de meilleures décisions d'investissement.
-
-Tu as accès aux données complètes et actualisées du client. Réponds en français, de façon claire, précise et bienveillante. Donne des conseils concrets et personnalisés basés sur les données réelles. Utilise des chiffres précis quand tu y fais référence.
-
-⚠️ IMPORTANT : Tu n'es pas un conseiller en investissement agréé. Tes réponses sont éducatives et indicatives. Pour des décisions importantes, recommande de consulter un professionnel.
-
-═══════════════════════════════════
-PROFIL DU CLIENT
-═══════════════════════════════════
-Nom : ${c.client?.nom || "N/A"}
-${ident.date_naissance ? `Âge : ${new Date().getFullYear() - new Date(ident.date_naissance).getFullYear()} ans` : ""}
-${ident.profession ? `Profession : ${ident.profession}` : ""}
-${ident.situation_personnelle ? `Situation : ${ident.situation_personnelle}` : ""}
-${ident.profil_risque ? `Profil de risque : ${ident.profil_risque}` : ""}
-${ident.horizon_investissement ? `Horizon : ${ident.horizon_investissement}` : ""}
-${ident.objectif_global ? `Objectif global : ${ident.objectif_global}` : ""}
-
-═══════════════════════════════════
-PATRIMOINE
-═══════════════════════════════════
-Patrimoine financier : ${fmt(patrimoineFinancier)}
-Immobilier net (perso) : ${fmt(immoNet)}
-Patrimoine global consolidé : ${fmt(patrimoineFinancier + immoNet)}
-Patrimoine cible : ${fmt(c.client?.patrimoine_cible)}
-
-Produits financiers :
-${produitsStr || "Aucun produit renseigné"}
-
-Biens immobiliers :
-${biensStr || "Aucun bien immobilier"}
-
-═══════════════════════════════════
-OBJECTIFS
-═══════════════════════════════════
-${objectifsStr || "Aucun objectif défini"}
-
-═══════════════════════════════════
-BUDGET MENSUEL
-═══════════════════════════════════
-Revenus mensuels : ${fmt(totalRevenus)}
-Dépenses : ${fmt(totalDepenses)}
-Virements épargne : ${fmt(totalVirements)}
-Épargne disponible : ${fmt(totalRevenus - totalDepenses - totalVirements)}
-
-═══════════════════════════════════
-PORTEFEUILLE BOURSIER
-═══════════════════════════════════
-${actionsStr || "Aucune position"}
-
-═══════════════════════════════════
-DIVIDENDES (derniers enregistrés)
-═══════════════════════════════════
-${dividendesStr || "Aucun dividende"}
-
-Statut client : ${c.client?.statut || "N/A"}
-Date de début de suivi : ${c.client?.date_debut || "N/A"}`;
+    return [
+      "Tu es un assistant patrimonial expert integre dans l'application Rob'Invest.",
+      "Tu aides le client a comprendre sa situation financiere, optimiser son patrimoine et prendre de meilleures decisions d'investissement.",
+      "Reponds en francais, de facon claire, precise et bienveillante.",
+      "Donne des conseils concrets et personnalises bases sur les donnees reelles du client.",
+      "Utilise des chiffres precis. Ne jamais inventer de donnees.",
+      "",
+      "AVERTISSEMENT : Tu n'es pas un conseiller en investissement agree. Tes reponses sont educatives et indicatives.",
+      "",
+      "PROFIL DU CLIENT",
+      "Nom : " + (c.client?.nom || "N/A"),
+      age ? "Age : " + age : "",
+      ident.profession ? "Profession : " + ident.profession : "",
+      ident.situation_personnelle ? "Situation : " + ident.situation_personnelle : "",
+      ident.profil_risque ? "Profil de risque : " + ident.profil_risque : "",
+      ident.horizon_investissement ? "Horizon : " + ident.horizon_investissement : "",
+      ident.objectif_global ? "Objectif global : " + ident.objectif_global : "",
+      "",
+      "PATRIMOINE",
+      "Patrimoine financier : " + fmtE(patrimoineFinancier),
+      "Immobilier net perso : " + fmtE(immoNet),
+      "Patrimoine global : " + fmtE(patrimoineFinancier + immoNet),
+      "Patrimoine cible : " + fmtE(c.client?.patrimoine_cible),
+      "",
+      "Produits financiers :",
+      produitsStr,
+      "",
+      "Biens immobiliers :",
+      biensStr,
+      "",
+      "OBJECTIFS",
+      objectifsStr,
+      "",
+      "BUDGET MENSUEL",
+      "Revenus : " + fmtE(totalRevenus),
+      "Depenses : " + fmtE(totalDepenses),
+      "Virements epargne : " + fmtE(totalVirements),
+      "Epargne disponible : " + fmtE(totalRevenus - totalDepenses - totalVirements),
+      "",
+      "PORTEFEUILLE BOURSIER",
+      actionsStr,
+      "",
+      "DIVIDENDES (derniers enregistres)",
+      dividendesStr,
+      "",
+      "Statut client : " + (c.client?.statut || "N/A"),
+    ].filter(Boolean).join("
+");
   }
 
-  async function sendMessage(text) {
+    async function sendMessage(text) {
     const userMsg = text || input.trim();
     if (!userMsg) return;
     setInput("");
