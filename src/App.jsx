@@ -2250,7 +2250,10 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
 
   // Timeline enrichie avec immo historique (utilise date_achat comme point de départ)
   const today = new Date().getTime();
-  const timelineAvecImmo = timeline.map(point => {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const timelineAvecImmo = (() => {
+    // Build enriched timeline with immo interpolated at each point
+    const enriched = timeline.map(point => {
     const pointDate = new Date(point.rawDate).getTime();
     const immoAtDate = biensImmo.reduce((s, b) => {
       if (!b.date_achat || b.date_achat > point.rawDate) return s;
@@ -2275,7 +2278,25 @@ produits, avoirs, parCategorie, patrimoineActuel, timeline, color, activeClient,
       return s + (valeurEstimee - detteEstimee) * det;
     }, 0);
     return { ...point, total: point.total + immoAtDate };
-  });
+    });
+    // Add synthetic "today" point using exact current values
+    const lastPoint = enriched[enriched.length - 1];
+    const todayFinancier = patrimoineActuel;
+    const todayTotal = todayFinancier + immoNet;
+    // Only add if today is after the last recorded point
+    if (!lastPoint || lastPoint.rawDate < todayStr) {
+      enriched.push({
+        date: fmtDate(todayStr),
+        rawDate: todayStr,
+        ts: today,
+        total: todayTotal,
+      });
+    } else {
+      // Update last point to match exact current values
+      enriched[enriched.length - 1] = { ...lastPoint, total: todayTotal };
+    }
+    return enriched;
+  })();
 
   return (
     <div>
