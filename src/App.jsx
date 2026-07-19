@@ -4344,6 +4344,11 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
+  const [biens, setBiens] = useState([]);
+  const [objBiens, setObjBiens] = useState([]);
+  const [clientBudgets, setClientBudgets] = useState([]);
+  const [clientActions, setClientActions] = useState([]);
+  const [clientDividendes, setClientDividendes] = useState([]);
   const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
@@ -4364,12 +4369,17 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
 
   async function loadData(cid) {
     try {
-      const [p,a,o] = await Promise.all([
+      const [p,a,o,b,budg,act,div] = await Promise.all([
         db.get("produits",`select=*&client_id=eq.${cid}`),
         db.get("avoirs",`select=*&client_id=eq.${cid}&order=date`),
         db.get("objectifs",`select=*&client_id=eq.${cid}`),
+        db.get("biens_immobiliers",`select=*&client_id=eq.${cid}`),
+        db.get("budgets",`select=*&client_id=eq.${cid}`),
+        db.get("actions",`select=*&client_id=eq.${cid}`),
+        db.get("dividendes",`select=*&client_id=eq.${cid}&order=annee.desc`),
       ]);
-      setProduits(p); setAvoirs(a); setObjectifs(o);
+      setProduits(p); setAvoirs(a); setObjectifs(o); setBiens(b||[]);
+      setClientBudgets(budg||[]); setClientActions(act||[]); setClientDividendes(div||[]);
       if (o.length>0) {
         const ids=o.map(x=>x.id).join(",");
         const [j,op]=await Promise.all([
@@ -4385,6 +4395,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
   const color = "#C9A96E";
   const lastAvoir = pid => { const a=avoirs.filter(a=>a.produit_id===pid).sort((a,b)=>new Date(b.date)-new Date(a.date)); return a[0]?.montant||0; };
   const patrimoineTotal = produits.reduce((s,p)=>s+lastAvoir(p.id),0);
+  const bienNet = b => { const det=(b.pct_detention!=null?b.pct_detention:100)/100; return ((b.valorisation_actuelle||b.prix_achat||0)-(b.capital_restant_du||0))*det; };
   const patrimoineObj = oid => { const ids=objProduits.filter(op=>op.objectif_id===oid).map(op=>op.produit_id); return produits.filter(p=>ids.includes(p.id)).reduce((s,p)=>s+lastAvoir(p.id),0); };
   const parCategorie = CATEGORIES.map(cat=>({name:cat,value:produits.filter(p=>p.categorie===cat).reduce((s,p)=>s+lastAvoir(p.id),0),color:CAT_COLORS[cat]})).filter(c=>c.value>0);
   const timeline = (() => {
