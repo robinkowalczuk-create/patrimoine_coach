@@ -3881,7 +3881,12 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
   const [objectifs, setObjectifs] = useState([]);
   const [jalons, setJalons] = useState([]);
   const [objProduits, setObjProduits] = useState([]);
+  const [biens, setBiens] = useState([]);
+  const [objBiens, setObjBiens] = useState([]);
   const [identifications, setIdentifications] = useState({});
+  const [adminBudgets, setAdminBudgets] = useState([]);
+  const [adminActions, setAdminActions] = useState([]);
+  const [adminDividendes, setAdminDividendes] = useState([]);
   const [page, setPage] = useState("global");
   const [tab, setTab] = useState("identification");
   const [loading, setLoading] = useState(true);
@@ -3901,13 +3906,18 @@ function AdminApp({ db, onLogout, isDark = true, onToggleTheme }) {
 
   async function loadClientData(cid) {
     try {
-      const [p,a,o,ident] = await Promise.all([
+      const [p,a,o,ident,b,budg,act,div] = await Promise.all([
         db.get("produits",`select=*&client_id=eq.${cid}`),
         db.get("avoirs",`select=*&client_id=eq.${cid}&order=date`),
         db.get("objectifs",`select=*&client_id=eq.${cid}`),
         db.get("identification",`select=*&client_id=eq.${cid}`),
+        db.get("biens_immobiliers",`select=*&client_id=eq.${cid}`),
+        db.get("budgets",`select=*&client_id=eq.${cid}`),
+        db.get("actions",`select=*&client_id=eq.${cid}`),
+        db.get("dividendes",`select=*&client_id=eq.${cid}&order=annee.desc`),
       ]);
-      setProduits(p); setAvoirs(a); setObjectifs(o);
+      setProduits(p); setAvoirs(a); setObjectifs(o); setBiens(b||[]);
+      setAdminBudgets(budg||[]); setAdminActions(act||[]); setAdminDividendes(div||[]);
       if(ident.length>0) setIdentifications(prev=>({...prev,[cid]:ident[0]}));
       if (o.length>0) {
         const ids = o.map(x=>x.id).join(",");
@@ -4379,6 +4389,7 @@ function ClientApp({ db, userId, onLogout, isDark = true, onToggleTheme }) {
         db.get("dividendes",`select=*&client_id=eq.${cid}&order=annee.desc`),
       ]);
       setProduits(p); setAvoirs(a); setObjectifs(o); setBiens(b||[]);
+      setAdminBudgets(budg||[]); setAdminActions(act||[]); setAdminDividendes(div||[]);
       setClientBudgets(budg||[]); setClientActions(act||[]); setClientDividendes(div||[]);
       if (o.length>0) {
         const ids=o.map(x=>x.id).join(",");
