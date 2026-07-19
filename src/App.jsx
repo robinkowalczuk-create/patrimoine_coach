@@ -3209,16 +3209,15 @@ function AssistantIA({ clientData }) {
     setMessages(newMessages);
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
           system: buildSystemPrompt(),
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
         }),
       });
+      if (!response.ok) throw new Error("HTTP " + response.status);
       const data = await response.json();
       const reply = data.content?.[0]?.text || "Je n'ai pas pu générer de réponse.";
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
